@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurações - Loopin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/frontend/src/shared/theme.css">
+  <link rel="stylesheet" href="./settings.css">
+</head>
+<body>
+  <div id="sidebar-container"></div>
+
+  <div class="main-layout">
+    <main class="content-area">
+
+      <div class="page-header">
+        <div class="header-title">
+          <h1>Configurações</h1>
+          <p class="text-muted">Gerencie sua conta e integrações</p>
+        </div>
+      </div>
+
+      <!-- NAV TABS -->
+      <div class="settings-tabs">
+        <button class="tab-btn active" data-tab="organization">🏢 Organização</button>
+        <button class="tab-btn" data-tab="integrations">🔌 Integrações</button>
+        <button class="tab-btn" data-tab="security">🔑 Segurança</button>
+        <button class="tab-btn" data-tab="danger">⚠️ Zona de Perigo</button>
+      </div>
+
+      <!-- TAB: ORGANIZAÇÃO -->
+      <div class="tab-content active" id="tab-organization">
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-icon">🏢</div>
+            <div>
+              <h2>Dados da Organização</h2>
+              <p>Essas informações aparecem nos relatórios PDF enviados aos seus clientes</p>
+            </div>
+          </div>
+          <form id="formOrganization">
+            <div class="form-group">
+              <label for="orgName">Nome da Organização</label>
+              <input type="text" id="orgName" placeholder="Ex: Loopin Marketing Indoor">
+            </div>
+            <div class="form-group">
+              <label for="orgLogo">URL da Logo</label>
+              <input type="text" id="orgLogo" placeholder="https://exemplo.com/logo.png">
+              <span class="field-hint">Aparece no cabeçalho dos relatórios PDF</span>
+            </div>
+
+            <!-- Preview da logo -->
+            <div id="logoPreview" class="logo-preview" style="display:none;">
+              <span class="logo-preview-label">Preview</span>
+              <img id="logoPreviewImg" src="" alt="Logo preview">
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Salvar Organização</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: INTEGRAÇÕES -->
+      <div class="tab-content" id="tab-integrations">
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-icon">🌤️</div>
+            <div>
+              <h2>API do Clima</h2>
+              <p>Necessária para o widget de previsão do tempo nas telas</p>
+            </div>
+          </div>
+          <form id="formAPIs">
+            <div class="form-group">
+              <label for="apiWeather">Chave API OpenWeatherMap</label>
+              <div class="password-field">
+                <input type="password" id="apiWeather" placeholder="Cole sua chave aqui">
+                <button type="button" class="btn-toggle-password" onclick="togglePassword('apiWeather', this)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+              </div>
+              <span class="field-hint">
+                Obtenha sua chave gratuita em 
+                <a href="https://openweathermap.org/api" target="_blank">openweathermap.org</a>
+              </span>
+            </div>
+
+            <div class="api-status" id="apiWeatherStatus" style="display:none;">
+              <span class="status-dot"></span>
+              <span class="status-text"></span>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" onclick="testWeatherApi()">Testar Conexão</button>
+              <button type="submit" class="btn btn-primary">Salvar Chave</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- TAB: SEGURANÇA -->
+      <div class="tab-content" id="tab-security">
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <div class="settings-card-icon">🔑</div>
+            <div>
+              <h2>Alterar Senha</h2>
+              <p>Use uma senha forte com pelo menos 8 caracteres</p>
+            </div>
+          </div>
+          <form id="formPassword">
+            <div class="form-group">
+              <label for="currentPassword">Senha Atual</label>
+              <div class="password-field">
+                <input type="password" id="currentPassword" placeholder="••••••••">
+                <button type="button" class="btn-toggle-password" onclick="togglePassword('currentPassword', this)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="newPassword">Nova Senha</label>
+              <div class="password-field">
+                <input type="password" id="newPassword" placeholder="••••••••" oninput="checkPasswordStrength(this.value)">
+                <button type="button" class="btn-toggle-password" onclick="togglePassword('newPassword', this)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+              </div>
+              <!-- Barra de força da senha -->
+              <div class="password-strength" id="passwordStrength" style="display:none;">
+                <div class="strength-bar">
+                  <div class="strength-fill" id="strengthFill"></div>
+                </div>
+                <span class="strength-label" id="strengthLabel"></span>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirmar Nova Senha</label>
+              <div class="password-field">
+                <input type="password" id="confirmPassword" placeholder="••••••••">
+                <button type="button" class="btn-toggle-password" onclick="togglePassword('confirmPassword', this)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Alterar Senha</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Info da conta -->
+        <div class="settings-card account-info-card">
+          <div class="settings-card-header">
+            <div class="settings-card-icon">👤</div>
+            <div>
+              <h2>Informações da Conta</h2>
+              <p>Dados do seu acesso atual</p>
+            </div>
+          </div>
+          <div class="account-info">
+            <div class="info-row">
+              <span class="info-label">E-mail</span>
+              <span class="info-value" id="accountEmail">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Conta criada em</span>
+              <span class="info-value" id="accountCreated">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Último acesso</span>
+              <span class="info-value" id="accountLastLogin">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: ZONA DE PERIGO -->
+      <div class="tab-content" id="tab-danger">
+        <div class="settings-card danger-card">
+          <div class="settings-card-header">
+            <div class="settings-card-icon">🗑️</div>
+            <div>
+              <h2>Limpar Cache</h2>
+              <p>Remove dados temporários armazenados no navegador</p>
+            </div>
+          </div>
+          <div class="danger-action">
+            <p class="danger-desc">Útil se o painel estiver apresentando comportamento estranho. Não apaga nenhum dado do sistema.</p>
+            <button type="button" class="btn btn-secondary" id="btnClearCache">🔄 Limpar Cache do Navegador</button>
+          </div>
+        </div>
+
+        <div class="settings-card danger-card">
+          <div class="settings-card-header">
+            <div class="settings-card-icon">📤</div>
+            <div>
+              <h2>Exportar Dados</h2>
+              <p>Baixe todos os seus dados em formato JSON</p>
+            </div>
+          </div>
+          <div class="danger-action">
+            <p class="danger-desc">Exporta telas, playlists, campanhas e configurações. Em breve.</p>
+            <button type="button" class="btn btn-secondary" id="btnExportData" disabled>📥 Exportar Dados (em breve)</button>
+          </div>
+        </div>
+
+        <div class="settings-card danger-card danger-card--red">
+          <div class="settings-card-header">
+            <div class="settings-card-icon">🚪</div>
+            <div>
+              <h2>Sair da Conta</h2>
+              <p>Encerra sua sessão atual</p>
+            </div>
+          </div>
+          <div class="danger-action">
+            <p class="danger-desc">Você será redirecionado para a tela de login.</p>
+            <button type="button" class="btn btn-danger" id="btnLogout">🚪 Sair da Conta</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/frontend/src/shared/config.js"></script>
+  <script src="/frontend/src/shared/utils.js"></script>
+  <script src="/frontend/src/shared/api-helpers.js"></script>
+  <script src="./settings.js"></script>
+</body>
+</html>

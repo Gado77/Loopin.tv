@@ -173,6 +173,11 @@ function renderScreensTable(screens) {
       </td>
       <td><span class="device-id-tag">${screen.device_id || 'PENDENTE'}</span></td>
       <td>
+        <div style="font-weight: 500; font-size: 13px; color: #3182CE; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(screen.current_content || '')}">
+          ${screen.current_content ? '▶️ ' + escapeHtml(screen.current_content) : '<span style="color: #CBD5E0;">Parado</span>'}
+        </div>
+      </td>
+      <td>
         ${screen.playlists?.name 
           ? `<span style="color:#2D3748;">${escapeHtml(screen.playlists.name)}</span>` 
           : '<span style="color: #CBD5E0;">Nenhuma</span>'}
@@ -266,11 +271,27 @@ async function openDiagnosticsModal(screenId) {
   document.getElementById('diagCurrentContent').textContent = screen.current_content || 'Aguardando...'
   document.getElementById('diagPlaylistCount').textContent = screen.playlist_items_count 
     ? `${screen.playlist_items_count} itens` 
-    : 'Aguardando...'
-  document.getElementById('diagCacheUsed').textContent = screen.cache_used_mb 
-    ? `${screen.cache_used_mb} MB` 
-    : 'Aguardando...'
+    : '0 itens'
   
+  // Cache Progress Bar
+  const cacheUsed = screen.cache_used_mb || 0
+  const cacheLimit = 500 // 500MB é o limite configurado no Android
+  const cachePercent = Math.min(100, Math.round((cacheUsed / cacheLimit) * 100))
+  document.getElementById('diagCacheBar').style.width = `${cachePercent}%`
+  document.getElementById('diagCacheUsed').textContent = `${cacheUsed} MB / ${cacheLimit} MB`
+  
+  // Update buttons
+  const btnPause = document.getElementById('btnPauseResume')
+  if (screen.is_paused) {
+    btnPause.innerHTML = '▶️ Retomar'
+    btnPause.classList.remove('btn-secondary')
+    btnPause.classList.add('btn-primary')
+  } else {
+    btnPause.innerHTML = '⏸️ Pausar'
+    btnPause.classList.add('btn-secondary')
+    btnPause.classList.remove('btn-primary')
+  }
+
   // Status badge no modal
   const statusBadge = document.getElementById('diagStatusBadge')
   statusBadge.className = `status-badge ${isOnline ? 'online' : 'offline'}`
@@ -281,34 +302,64 @@ async function openDiagnosticsModal(screenId) {
 
 let currentScreenIdForCommand = null
 
-async function forceRefreshFromModal() {
-  if (!currentScreenIdForCommand) {
-    showNotification('Erro: tela não selecionada', 'error')
-    return
+async function sendCommand(command, payload = "") {
+  if (!currentScreenIdForCommand) return
+
+  const btn = event?.target
+  const originalHtml = btn?.innerHTML
+  if (btn) {
+    btn.disabled = true
+    btn.innerHTML = '⏳...'
   }
-  
-  const btn = document.getElementById('btnForceRefresh')
-  btn.disabled = true
-  btn.innerHTML = '⏳ Enviando...'
-  
+
   try {
-    await apiInsert('screen_commands', {
+    const { error } = await apiInsert('screen_commands', {
       screen_id: currentScreenIdForCommand,
-      command: 'refresh',
-      payload: { force: true },
+      command: command,
+      payload: payload,
       status: 'pending'
     })
-    
-    showNotification('Comando enviado! O player vai reiniciar a playlist em até 30 segundos.', 'success')
+
+    if (error) throw error
+    showNotification(`Comando '${command}' enviado com sucesso!`, 'success')
   } catch (error) {
     console.error('Erro ao enviar comando:', error)
-    showNotification('Erro ao enviar comando. Tente novamente.', 'error')
+    showNotification('Falha ao enviar comando.', 'error')
+  } finally {
+    if (btn) {
+      setTimeout(() => {
+        btn.disabled = false
+        btn.innerHTML = originalHtml
+      }, 2000)
+    }
   }
+}
+
+async function forceRefreshFromModal() {
+  await sendCommand('refresh', 'force')
+}
+
+async function togglePauseResume() {
+  const screen = screensData.find(s => s.id === currentScreenIdForCommand)
+  if (!screen) return
   
-  setTimeout(() => {
-    btn.disabled = false
-    btn.innerHTML = '🔄 Forçar Refresh'
-  }, 3000)
+  const isCurrentlyPaused = screen.is_paused || false
+  const command = isCurrentlyPaused ? 'resume' : 'pause'
+  
+  await sendCommand(command)
+  
+  // Atualiza o estado local para feedback imediato no UI
+  screen.is_paused = !isCurrentlyPaused
+  const btn = document.getElementById('btnPauseResume')
+  if (screen.is_paused) {
+    btn.innerHTML = '▶️ Retomar'
+    btn.classList.remove('btn-secondary')
+    btn.classList.add('btn-primary')
+  } else {
+    btn.innerHTML = '⏸️ Pausar'
+    btn.classList.add('btn-secondary')
+    btn.classList.remove('btn-primary')
+  }
 }
 
 function closeDiagnosticsModal() {
@@ -481,6 +532,116 @@ function setupEventListeners() {
   statusFilter.addEventListener('change', (e) => {
     loadScreens(searchInput.value, e.target.value)
   })
+}
+
+// ==================== LOG VIEWER ====================
+
+async function openLogViewer() {
+  const screen = screensData.find(s => s.id === currentScreenIdForCommand)
+  if (!screen) return
+
+  document.getElementById('logScreenName').textContent = screen.name
+  document.getElementById('modalLogs').classList.add('active')
+  refreshLogs()
+}
+
+function closeLogViewer() {
+  document.getElementById('modalLogs').classList.remove('active')
+}
+
+async function refreshLogs() {
+  const logList = document.getElementById('logList')
+  logList.innerHTML = '<div style="padding: 40px; text-align: center; color: #718096;"><div class="spinner-small"></div> Carregando logs...</div>'
+
+  try {
+    const { data: logs, error } = await apiSelect('player_logs', {
+      eq: { screen_id: currentScreenIdForCommand },
+      order: { field: 'created_at', ascending: false },
+      limit: 50
+    })
+
+    if (error) throw error
+
+    if (!logs || logs.length === 0) {
+      logList.innerHTML = '<div style="padding: 40px; text-align: center; color: #718096;">Nenhum log encontrado para esta tela.</div>'
+      return
+    }
+
+    logList.innerHTML = logs.map(log => {
+      const time = new Date(log.created_at).toLocaleTimeString('pt-BR')
+      const typeClass = log.event_type.includes('error') ? 'error' : 
+                        log.event_type.includes('start') ? 'start' : 
+                        log.event_type.includes('command') ? 'command' : ''
+      
+      return `
+        <div class="log-entry">
+          <span class="log-time">${time}</span>
+          <span class="log-type ${typeClass}">${log.event_type}</span>
+          <span class="log-msg">${escapeHtml(log.message || '')}</span>
+        </div>
+      `
+    }).join('')
+
+  } catch (error) {
+    console.error('Erro ao carregar logs:', error)
+    logList.innerHTML = '<div style="padding: 40px; text-align: center; color: #E53E3E;">Erro ao carregar logs.</div>'
+  }
+}
+
+// ==================== PLAYLIST PREVIEW ====================
+
+async function loadPlaylistPreview(playlistId) {
+  const container = document.getElementById('playlistPreviewContainer')
+  const list = document.getElementById('playlistPreviewList')
+
+  if (!playlistId) {
+    container.style.display = 'none'
+    return
+  }
+
+  container.style.display = 'block'
+  list.innerHTML = '<div style="padding: 20px; text-align: center; color: #718096;"><div class="spinner-small"></div> Carregando preview...</div>'
+
+  try {
+    const { data: items, error } = await apiSelect('playlist_items', {
+      eq: { playlist_id: playlistId },
+      select: '*, campaigns(name, media_type), dynamic_contents(name, content_type)',
+      order: { field: 'display_order', ascending: true }
+    })
+
+    if (error) throw error
+
+    if (!items || items.length === 0) {
+      list.innerHTML = '<div style="padding: 20px; text-align: center; color: #718096;">Playlist vazia</div>'
+      return
+    }
+
+    list.innerHTML = items.map((item, index) => {
+      const name = item.campaigns?.name || item.dynamic_contents?.name || 'Item sem nome'
+      const type = item.campaigns ? (item.campaigns.media_type === 'video' ? '📹 Vídeo' : '🖼️ Imagem') : 
+                   item.dynamic_contents ? `🧩 ${item.dynamic_contents.content_type}` : '❓ Desconhecido'
+      const duration = item.duration || (item.campaigns ? 'Auto' : '15s')
+
+      return `
+        <div style="padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #EDF2F7; background: white;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-weight: bold; color: #CBD5E0; font-size: 12px;">${index + 1}</span>
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: #2D3748;">${escapeHtml(name)}</div>
+              <div style="font-size: 10px; color: #718096;">${type}</div>
+            </div>
+          </div>
+          <div style="font-size: 11px; font-weight: 600; color: #3182CE; background: #EBF8FF; padding: 2px 8px; border-radius: 4px;">
+            ${duration}s
+          </div>
+        </div>
+      `
+    }).join('')
+
+  } catch (error) {
+    console.error('Erro ao carregar preview:', error)
+    list.innerHTML = '<div style="padding: 20px; text-align: center; color: #E53E3E;">Erro ao carregar preview</div>'
+  }
 }
 
 console.log('✅ Screens.js carregado')

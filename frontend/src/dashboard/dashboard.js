@@ -21,13 +21,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadKPIs(),
       loadRecentScreens(),
       loadUpcomingCampaigns(),
-      loadRealtimeStatus()
+      loadRealtimeStatus(),
+      loadAlerts()
     ])
 
     setupEventListeners()
 
     // Auto-atualiza o status a cada 30s (mesma frequência do ping da TV)
-    setInterval(loadRealtimeStatus, 30000)
+    setInterval(() => {
+      loadRealtimeStatus()
+      loadAlerts()
+    }, 30000)
 
   } catch (error) {
     console.error('❌ Erro na inicialização:', error)
@@ -211,63 +215,101 @@ async function loadUpcomingCampaigns() {
   }
 }
 
-// ==================== STATUS REALTIME ====================
+// ==================== SISTEMA DE ALERTAS (ATIVO) ====================
 
-async function loadRealtimeStatus() {
-  const container = document.getElementById('statusContainer')
-
+async function loadAlerts() {
+  const container = document.getElementById('alertsContainer')
+  const list = document.getElementById('alertsList')
+  
   try {
-    const { data: screens, error } = await apiSelect('screens', {
+    const alerts = []
+    const now = Date.now()
+    const FIFTEEN_MINS = 15 * 60 * 1000
+    const THREE_DAYS = 3 * 24 * 60 * 60 * 1000
+
+    // 1. Busca telas para checar status e playlists
+    const { data: screens } = await apiSelect('screens', {
       userId: currentUser.id,
-      select: 'id, name, status, last_ping',
-      order: { field: 'name', ascending: true }
+      select: 'id, name, last_ping, playlist_items_count, active_playlist_id'
     })
 
-    if (error) throw error
+    if (screens) {
+      screens.forEach(s => {
+        // Alerta: Tela Offline há mais de 15 min
+        if (s.last_ping) {
+          const lastPing = new Date(s.last_ping).getTime()
+          if (now - lastPing > FIFTEEN_MINS) {
+            alerts.push({
+              type: 'danger',
+              title: 'Tela Desconectada',
+              msg: `A tela <strong>${s.name}</strong> está offline há mais de 15 minutos.`
+            })
+          }
+        }
 
-    if (!screens || screens.length === 0) {
-      container.innerHTML = '<div style="text-align: center; color: #718096; padding: 24px;">Nenhuma tela monitorada</div>'
+        // Alerta: Playlist Vazia
+        if (s.active_playlist_id && s.playlist_items_count === 0) {
+          alerts.push({
+            type: 'warning',
+            title: 'Playlist Sem Conteúdo',
+            msg: `A tela <strong>${s.name}</strong> está ligada mas não tem itens para exibir.`
+          })
+        }
+      })
+    }
+
+    // 2. Busca campanhas vencendo em breve
+    const threeDaysFromNow = new Date(now + THREE_DAYS).toISOString().split('T')[0]
+    const today = new Date().toISOString().split('T')[0]
+
+    const { data: campaigns } = await apiSelect('campaigns', {
+      userId: currentUser.id,
+      select: 'id, name, end_date',
+      eq: { status: 'active' }
+    })
+
+    if (campaigns) {
+      campaigns.forEach(c => {
+        if (c.end_date >= today && c.end_date <= threeDaysFromNow) {
+          alerts.push({
+            type: 'info',
+            title: 'Campanha Expirando',
+            msg: `A campanha <strong>${c.name}</strong> encerra em ${formatDate(c.end_date)}.`
+          })
+        }
+      })
+    }
+
+    // Renderiza
+    if (alerts.length === 0) {
+      container.style.display = 'none'
       return
     }
 
-    // Separa online e offline para mostrar online primeiro
-    const sorted = [...screens].sort((a, b) => {
-      const aOn = isScreenOnline(a) ? 1 : 0
-      const bOn = isScreenOnline(b) ? 1 : 0
-      return bOn - aOn
-    })
-
-    container.innerHTML = sorted.map(screen => {
-      const online = isScreenOnline(screen)
-      const lastSeen = formatLastSeen(screen.last_ping)
-
-      return `
-        <div class="status-item">
-          <div class="status-indicator ${online ? 'online' : 'offline'}"></div>
-          <div class="status-info">
-            <div class="status-name">${escapeHtml(screen.name)}</div>
-            <div class="status-time" style="color: ${online ? '#10B981' : '#A0AEC0'};">
-              ${online ? '● ' + lastSeen : lastSeen}
-            </div>
-          </div>
-          <div style="
-            font-size: 11px;
-            font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 20px;
-            background: ${online ? 'rgba(16,185,129,0.1)' : 'rgba(160,174,192,0.1)'};
-            color: ${online ? '#10B981' : '#718096'};
-            white-space: nowrap;
-          ">
-            ${online ? 'ONLINE' : 'OFFLINE'}
-          </div>
+    container.style.display = 'block'
+    list.innerHTML = alerts.map(alert => `
+      <div style="
+        display: flex; 
+        align-items: center; 
+        gap: 12px; 
+        padding: 12px; 
+        margin-top: 12px; 
+        background: white; 
+        border-radius: 8px; 
+        border: 1px solid #FED7AA;
+      ">
+        <div style="font-size: 20px;">
+          ${alert.type === 'danger' ? '🔴' : alert.type === 'warning' ? '🟠' : 'ℹ️'}
         </div>
-      `
-    }).join('')
+        <div style="flex: 1;">
+          <div style="font-size: 13px; font-weight: 700; color: #2D3748;">${alert.title}</div>
+          <div style="font-size: 12px; color: #718096;">${alert.msg}</div>
+        </div>
+      </div>
+    `).join('')
 
   } catch (error) {
-    console.error('❌ Erro no Status:', error)
-    container.innerHTML = '<div style="text-align: center; color: #E53E3E;">Erro ao atualizar status</div>'
+    console.error('❌ Erro ao carregar alertas:', error)
   }
 }
 

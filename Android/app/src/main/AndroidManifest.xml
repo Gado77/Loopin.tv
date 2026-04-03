@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- API 29+ exige permissão específica para foreground service de mídia -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        android:minSdkVersion="29" />
+
+    <application
+        android:allowBackup="false"
+        android:icon="@mipmap/loopin_icon"
+        android:roundIcon="@mipmap/loopin_icon"
+        android:label="Loopin Player"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:theme="@style/Theme.LoopinTV">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:windowSoftInputMode="stateHidden">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            foregroundServiceType="mediaPlayback" é API 29+.
+            No Android 7.1 (API 25) esse atributo causa crash — removido.
+            O service funciona normalmente sem ele em APIs abaixo de 29.
+        -->
+        <service
+            android:name=".WatchdogService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="false" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>

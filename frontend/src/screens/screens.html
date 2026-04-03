@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
@@ -50,7 +50,7 @@
                 <th>Status</th>
                 <th>Nome da Tela</th>
                 <th>Localização</th>
-                <th>ID do Dispositivo</th>
+                <th>Reproduzindo</th>
                 <th>Playlist Ativa</th>
                 <th>Última Atividade</th>
                 <th style="text-align: right;">Ações</th>
@@ -164,10 +164,17 @@
 
           <div class="form-group">
             <label for="editScreenPlaylist">Playlist Padrão</label>
-            <select id="editScreenPlaylist">
+            <select id="editScreenPlaylist" onchange="loadPlaylistPreview(this.value)">
               <option value="">Nenhuma playlist selecionada</option>
             </select>
             <small style="color: #718096; margin-top: 4px;">Altere a playlist que roda nesta tela.</small>
+          </div>
+
+          <div id="playlistPreviewContainer" style="margin-bottom: 20px; display: none;">
+            <label style="font-size: 13px; font-weight: 600; color: #4A5568; display: block; margin-bottom: 10px;">📋 Preview da Playlist</label>
+            <div id="playlistPreviewList" style="background: #F7FAFC; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
+              <!-- Itens da playlist entrarão aqui -->
+            </div>
           </div>
 
           <div class="form-group">
@@ -240,7 +247,7 @@
           </div>
           <div class="diag-card" style="grid-column: span 2; background: #EBF8FF; border-color: #90CDF4;">
             <div class="diag-label" style="color: #2B6CB0;">Reproduzindo Agora</div>
-            <div class="diag-value" id="diagCurrentContent" style="color: #2B6CB0;">-</div>
+            <div class="diag-value" id="diagCurrentContent" style="color: #2B6CB0; font-size: 16px;">-</div>
           </div>
           <div class="diag-card">
             <div class="diag-label">Itens na Playlist</div>
@@ -248,8 +255,19 @@
           </div>
           <div class="diag-card">
             <div class="diag-label">Cache Usado</div>
-            <div class="diag-value" id="diagCacheUsed">-</div>
+            <div id="diagCacheContainer">
+              <div class="progress-bar-bg" style="margin-top: 8px;">
+                <div id="diagCacheBar" class="progress-bar-fill" style="width:0%;"></div>
+              </div>
+              <div class="diag-value" id="diagCacheUsed" style="font-size: 11px; margin-top: 4px;">0 MB / 500 MB</div>
+            </div>
           </div>
+        </div>
+        
+        <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <button class="btn btn-secondary btn-small" id="btnRestartApp" onclick="sendCommand('restart')">🚀 Reiniciar App</button>
+          <button class="btn btn-secondary btn-small" id="btnPauseResume" onclick="togglePauseResume()">⏸️ Pausar</button>
+          <button class="btn btn-secondary btn-small" id="btnLogViewer" onclick="openLogViewer()" style="grid-column: span 2; justify-content: center; background: #F7FAFC;">📋 Ver Logs do Player</button>
         </div>
         
         <div style="margin-top: 20px; padding: 16px; background: #FFF7ED; border-radius: 8px; border: 1px solid #FED7AA;">
@@ -259,33 +277,67 @@
       </div>
       
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="closeDiagnosticsModal()">Fechar</button>
-        <button type="button" class="btn btn-primary" id="btnForceRefresh" onclick="forceRefreshFromModal()">
-          🔄 Forçar Refresh
+        <div style="display: flex; gap: 10px; width: 100%;">
+          <button type="button" class="btn btn-secondary" onclick="closeDiagnosticsModal()" style="flex: 1;">Fechar</button>
+          <button type="button" class="btn btn-primary" id="btnForceRefresh" onclick="forceRefreshFromModal()" style="flex: 2;">
+            🔄 Forçar Atualização
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE LOGS -->
+  <div id="modalLogs" class="modal-overlay">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="modal-header">
+        <h2>📋 Logs do Player: <span id="logScreenName">-</span></h2>
+        <button class="btn-close-modal" onclick="closeLogViewer()">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
         </button>
+      </div>
+      <div class="modal-body-scroll" style="background: #1A202C; padding: 0;">
+        <div id="logList" class="log-container">
+          <div style="padding: 40px; text-align: center; color: #718096;">Carregando logs...</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeLogViewer()">Fechar</button>
+        <button type="button" class="btn btn-primary" onclick="refreshLogs()">🔄 Atualizar</button>
       </div>
     </div>
   </div>
 
   <style>
-    .diag-card {
-      background: #F7FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 8px;
-      padding: 12px;
+    .log-container {
+      font-family: 'Monaco', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #E2E8F0;
     }
-    .diag-label {
+    .log-entry {
+      padding: 10px 16px;
+      border-bottom: 1px solid #2D3748;
+      display: flex;
+      gap: 12px;
+    }
+    .log-time { color: #718096; white-space: nowrap; }
+    .log-type { 
+      font-weight: bold; 
+      text-transform: uppercase; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
       font-size: 10px;
-      text-transform: uppercase;
-      color: #718096;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
     }
-    .diag-value {
-      font-size: 14px;
-      font-weight: 600;
-      color: #2D3748;
-    }
+    .log-type.error { background: #742A2A; color: #FFF5F5; }
+    .log-type.start { background: #22543D; color: #F0FFF4; }
+    .log-type.command { background: #2A4365; color: #EBF8FF; }
+    .log-msg { flex: 1; word-break: break-all; }
+
+    .btn-small { padding: 8px 12px; font-size: 12px; }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

@@ -450,7 +450,10 @@ async function startBulkUpload() {
 
       // --- Etapa 3: Salvar no banco ---
       const mediaType = entry.file.type.startsWith('video/') ? 'video' : 'image'
-      const baseName  = entry.file.name.replace(/\.[^.]+$/, '')
+      const bulkCampaignName = document.getElementById('bulkCampaignName').value.trim()
+      const campaignName = bulkCampaignName
+        ? `${bulkCampaignName} - ${entry.file.name.replace(/\.[^.]+$/, '')}`
+        : entry.file.name.replace(/\.[^.]+$/, '')
 
       const { error: dbError } = await apiInsert('campaigns', {
         advertiser_id: advertiser_id || null,
@@ -459,7 +462,7 @@ async function startBulkUpload() {
         end_date,
         duration_seconds,
         status: 'active',
-        name: baseName,
+        name: campaignName,
         media_url: url,
         media_type: mediaType,
         file_path: filePath
@@ -532,6 +535,7 @@ async function handleCreateCampaign(e) {
 
     const mediaType = file.type.startsWith('video/') ? 'video' : 'image'
 
+    const campaignName = document.getElementById('campaignName').value.trim()
     const { error: dbError } = await apiInsert('campaigns', {
       advertiser_id:    document.getElementById('campaignAdvertiser').value,
       priority:         document.getElementById('campaignPriority').value,
@@ -539,7 +543,7 @@ async function handleCreateCampaign(e) {
       end_date:         document.getElementById('campaignEndDate').value,
       duration_seconds: parseInt(document.getElementById('campaignDuration').value),
       status: 'active',
-      name: `Campanha ${new Date().toLocaleDateString()} - ${file.name}`,
+      name: campaignName,
       media_url: url,
       media_type: mediaType,
       file_path: filePath
@@ -569,6 +573,7 @@ async function openEditModal(campaignId) {
     const c = campaigns[0]
 
     document.getElementById('editCampaignId').value = c.id
+    document.getElementById('editCampaignName').value = c.name || ''
     document.getElementById('editCampaignAdvertiser').value = c.advertiser_id || ''
     document.getElementById('editCampaignStatus').value = c.status
     document.getElementById('editCampaignPriority').value = c.priority
@@ -585,6 +590,7 @@ async function handleEditCampaign(e) {
 
   const id = document.getElementById('editCampaignId').value
   const updates = {
+    name:             document.getElementById('editCampaignName').value.trim(),
     advertiser_id:    document.getElementById('editCampaignAdvertiser').value,
     status:           document.getElementById('editCampaignStatus').value,
     priority:         document.getElementById('editCampaignPriority').value,

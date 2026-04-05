@@ -265,6 +265,10 @@
       </div>
       <form id="formNewCampaign">
         <div class="form-group">
+          <label for="campaignName">Nome da Campanha *</label>
+          <input type="text" id="campaignName" name="name" required placeholder="Ex: Promoção de Verão 2025">
+        </div>
+        <div class="form-group">
           <label for="campaignAdvertiser">Anunciante *</label>
           <select id="campaignAdvertiser" name="advertiser_id" required>
             <option value="">Carregando anunciantes...</option>
@@ -321,6 +325,10 @@
       </div>
       <form id="formEditCampaign">
         <input type="hidden" id="editCampaignId">
+        <div class="form-group">
+          <label for="editCampaignName">Nome da Campanha *</label>
+          <input type="text" id="editCampaignName" required placeholder="Ex: Promoção de Verão 2025">
+        </div>
         <div class="form-group">
           <label for="editCampaignAdvertiser">Anunciante *</label>
           <select id="editCampaignAdvertiser" required>
@@ -408,6 +416,11 @@
         <div class="bulk-settings">
           <p class="bulk-settings-title">⚙️ Configurações (aplicadas a todos os arquivos)</p>
           <div class="bulk-settings-grid">
+
+            <div class="bulk-field span2">
+              <label>Nome da Campanha (prefixo)</label>
+              <input id="bulkCampaignName" type="text" placeholder="Prefixo para o nome dos arquivos" />
+            </div>
 
             <div class="bulk-field span2">
               <label>Anunciante</label>

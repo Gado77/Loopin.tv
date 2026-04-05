@@ -126,10 +126,40 @@ function renderThumbnail(campaign) {
     return '<div style="width:40px;height:40px;background:#eee;border-radius:4px;"></div>'
   }
   if (campaign.media_type === 'video') {
-    return `<div style="width:40px;height:40px;background:#000;border-radius:4px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">▶️</div>`
+    return `<div class="preview-thumbnail" onclick="openPreview('${campaign.media_url}', 'video', '${escapeHtml(campaign.name || 'Video')}')" style="width:40px;height:40px;background:#000;border-radius:4px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;">▶️</div>`
   }
-  return `<img src="${campaign.media_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" onerror="this.src='https://via.placeholder.com/40'"/>`
+  return `<img class="preview-thumbnail" src="${campaign.media_url}" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" onclick="openPreview('${campaign.media_url}', 'image', '${escapeHtml(campaign.name || 'Imagem')}')" onerror="this.src='https://via.placeholder.com/40'"/>`
 }
+
+function openPreview(url, type, name) {
+  const modal = document.getElementById('previewModal')
+  const content = document.getElementById('previewContent')
+  
+  if (type === 'video') {
+    content.innerHTML = `<video src="${url}" controls autoplay style="max-width:90vw;max-height:80vh;border-radius:8px;"></video>`
+  } else {
+    content.innerHTML = `<img src="${url}" alt="${name}" style="max-width:90vw;max-height:80vh;border-radius:8px;"/>`
+  }
+  
+  modal.classList.add('active')
+  document.body.style.overflow = 'hidden'
+}
+
+function closePreviewModal(event) {
+  if (event.target.id === 'previewModal' || event.target.classList.contains('preview-modal-close') || event.currentTarget === event.target) {
+    const modal = document.getElementById('previewModal')
+    const content = document.getElementById('previewContent')
+    modal.classList.remove('active')
+    content.innerHTML = ''
+    document.body.style.overflow = ''
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closePreviewModal({ target: document.getElementById('previewModal'), currentTarget: document.getElementById('previewModal') })
+  }
+})
 
 // === COMPRESSÃO DE IMAGEM ===
 function compressImage(file, maxWidth = 1280, maxHeight = 720, quality = 0.82) {

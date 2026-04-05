@@ -470,6 +470,14 @@
     </div>
   </div>
 
+  <!-- Preview Modal -->
+  <div id="previewModal" class="preview-modal" onclick="closePreviewModal(event)">
+    <div class="preview-modal-content">
+      <button class="preview-modal-close" onclick="closePreviewModal(event)">&times;</button>
+      <div id="previewContent"></div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/src/shared/config.js"></script>
   <script src="/src/shared/utils.js"></script>

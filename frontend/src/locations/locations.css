@@ -597,11 +597,10 @@ form { padding: 24px; }
 
 .business-day-body {
   padding: 12px 16px;
-  display: none;
 }
 
-.business-day-card.open .business-day-body {
-  display: block;
+.business-day-body.hidden {
+  display: none;
 }
 
 .turn-row {
@@ -631,14 +630,10 @@ form { padding: 24px; }
   outline: none;
 }
 
-/* Toggle visibility based on checkbox */
-.day-checkbox:not(:checked) ~ * .business-day-body,
-.business-day-card:not(.open) .business-day-body {
-  display: none;
+.turn2-row {
+  margin-top: 8px;
 }
 
-#editWeekdays:not(:checked) ~ #editWeekdaysBody,
-#editDaySat:not(:checked) ~ #editSatBody,
-#editDaySun:not(:checked) ~ #editSunStatus {
+.turn2-row.hidden {
   display: none;
 }

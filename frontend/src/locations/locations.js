@@ -110,60 +110,52 @@ function renderLocationsTable(locations) {
 function getBusinessHoursFromForm(prefix = '') {
   const businessHours = {}
 
-  const days = {
-    mon: prefix === 'edit' ? 'wed' : 'mon',
-    tue: prefix === 'edit' ? 'wed' : 'tue',
-    wed: prefix === 'edit' ? 'wed' : 'wed',
-    thu: prefix === 'edit' ? 'wed' : 'thu',
-    fri: prefix === 'edit' ? 'wed' : 'fri',
-    sat: 'sat',
-    sun: 'sun'
-  }
-
-  const weekdaysCheckbox = document.querySelector(`#${prefix}Weekdays`) || document.querySelector(`input[data-days-group="weekdays"]`)
-  const satCheckbox = document.querySelector(`#${prefix}DaySat`) || document.querySelector(`input[data-day-single="sat"]`)
-  const sunCheckbox = document.querySelector(`#${prefix}DaySun`) || document.querySelector(`input[data-day-single="sun"]`)
+  const weekdaysCheckbox = document.getElementById(prefix + 'Weekdays') || document.querySelector('[data-days-group="weekdays"]')
+  const satCheckbox = document.getElementById(prefix + 'DaySat') || document.querySelector('[data-day-single="sat"]')
+  const sunCheckbox = document.getElementById(prefix + 'DaySun') || document.querySelector('[data-day-single="sun"]')
 
   if (weekdaysCheckbox?.checked) {
     const day = 'wed'
     const open = document.querySelector(`[data-day="${day}"][data-turn="1_open"]`)?.value
     const close = document.querySelector(`[data-day="${day}"][data-turn="1_close"]`)?.value
-    const hasTurn2 = document.querySelector(`#${prefix}WeekdaysTurn2`)?.checked
+    const hasTurn2 = document.getElementById(prefix + 'WeekdaysTurn2')?.checked
     
-    businessHours.mon = { open, close }
-    businessHours.tue = { open, close }
-    businessHours.wed = { open, close }
-    businessHours.thu = { open, close }
-    businessHours.fri = { open, close }
-    
-    if (hasTurn2 && open) {
-      const open2 = document.querySelector(`[data-day="${day}"][data-turn="2_open"]`)?.value
-      const close2 = document.querySelector(`[data-day="${day}"][data-turn="2_close"]`)?.value
-      businessHours.mon.turn2 = { open: open2, close: close2 }
-      businessHours.tue.turn2 = { open: open2, close: close2 }
-      businessHours.wed.turn2 = { open: open2, close: close2 }
-      businessHours.thu.turn2 = { open: open2, close: close2 }
-      businessHours.fri.turn2 = { open: open2, close: close2 }
+    if (open && close) {
+      businessHours.mon = { open, close }
+      businessHours.tue = { open, close }
+      businessHours.wed = { open, close }
+      businessHours.thu = { open, close }
+      businessHours.fri = { open, close }
+      
+      if (hasTurn2) {
+        const open2 = document.querySelector(`[data-day="${day}"][data-turn="2_open"]`)?.value
+        const close2 = document.querySelector(`[data-day="${day}"][data-turn="2_close"]`)?.value
+        if (open2 && close2) {
+          businessHours.mon.turn2 = { open: open2, close: close2 }
+          businessHours.tue.turn2 = { open: open2, close: close2 }
+          businessHours.wed.turn2 = { open: open2, close: close2 }
+          businessHours.thu.turn2 = { open: open2, close: close2 }
+          businessHours.fri.turn2 = { open: open2, close: close2 }
+        }
+      }
     }
   }
 
   if (satCheckbox?.checked) {
-    const open = document.querySelector(`[data-day="sat"][data-turn="1_open"]`)?.value
-    const close = document.querySelector(`[data-day="sat"][data-turn="1_close"]`)?.value
-    const hasTurn2 = document.querySelector(`#${prefix}SatTurn2`)?.checked
+    const open = document.querySelector('[data-day="sat"][data-turn="1_open"]')?.value
+    const close = document.querySelector('[data-day="sat"][data-turn="1_close"]')?.value
     
-    businessHours.sat = { open, close }
-    if (hasTurn2 && open) {
-      const open2 = document.querySelector(`[data-day="sat"][data-turn="2_open"]`)?.value
-      const close2 = document.querySelector(`[data-day="sat"][data-turn="2_close"]`)?.value
-      businessHours.sat.turn2 = { open: open2, close: close2 }
+    if (open && close) {
+      businessHours.sat = { open, close }
     }
   }
 
   if (sunCheckbox?.checked) {
-    const open = document.querySelector(`[data-day="sun"][data-turn="1_open"]`)?.value
-    const close = document.querySelector(`[data-day="sun"][data-turn="1_close"]`)?.value
-    businessHours.sun = { open, close }
+    const open = document.querySelector('[data-day="sun"][data-turn="1_open"]')?.value
+    const close = document.querySelector('[data-day="sun"][data-turn="1_close"]')?.value
+    if (open && close) {
+      businessHours.sun = { open, close }
+    }
   }
 
   return businessHours
@@ -227,6 +219,7 @@ async function openEditModal(locationId) {
     const weekdays = ['mon', 'tue', 'wed', 'thu', 'fri']
     const hasWeekdays = weekdays.some(d => bh[d])
     document.getElementById('editWeekdays').checked = hasWeekdays
+    document.getElementById('editWeekdaysBody').classList.toggle('hidden', !hasWeekdays)
     
     if (hasWeekdays && bh.wed) {
       document.getElementById('edit_wed_1_open').value = bh.wed.open || ''
@@ -240,14 +233,10 @@ async function openEditModal(locationId) {
 
     const hasSat = bh.sat
     document.getElementById('editDaySat').checked = hasSat
+    document.getElementById('editSatBody').classList.toggle('hidden', !hasSat)
     if (hasSat) {
       document.getElementById('edit_sat_1_open').value = bh.sat.open || ''
       document.getElementById('edit_sat_1_close').value = bh.sat.close || ''
-      if (bh.sat.turn2) {
-        document.getElementById('editSatTurn2').checked = true
-        document.getElementById('edit_sat_2_open').value = bh.sat.turn2.open || ''
-        document.getElementById('edit_sat_2_close').value = bh.sat.turn2.close || ''
-      }
     }
 
     const hasSun = bh.sun
@@ -323,6 +312,39 @@ async function deleteLocation(id) {
 
 // ==================== EVENTOS ====================
 
+function setupBusinessHoursToggle() {
+  document.querySelectorAll('[data-days-group="weekdays"]').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const body = e.target.closest('.business-day-card').querySelector('.business-day-body')
+      if (body) body.classList.toggle('hidden', !e.target.checked)
+    })
+  })
+  
+  document.querySelectorAll('[data-day-single]').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const day = e.target.dataset.daySingle
+      const card = e.target.closest('.business-day-card')
+      const body = card.querySelector('.business-day-body')
+      
+      if (day === 'sun') {
+        const status = card.querySelector('#editSunStatus') || card.querySelector('.sun-status')
+        if (status) status.textContent = e.target.checked ? 'Aberto' : 'Fechado'
+        return
+      }
+      
+      if (body) body.classList.toggle('hidden', !e.target.checked)
+    })
+  })
+  
+  document.querySelectorAll('.has-turn2').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      const card = e.target.closest('.business-day-card')
+      const rows = card.querySelectorAll('.turn2-row')
+      rows.forEach(row => row.classList.toggle('hidden', !e.target.checked))
+    })
+  })
+}
+
 function setupEventListeners() {
   // Modal - Criar
   setupModalHandlers(
@@ -339,6 +361,8 @@ function setupEventListeners() {
     'btnCloseEditModal',
     'btnCancelEditModal'
   )
+
+  setupBusinessHoursToggle()
 
   // Form - Criar
   const formNew = document.getElementById('formNewLocation')

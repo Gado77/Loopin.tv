@@ -106,6 +106,31 @@
           </div>
         </div>
 
+        <div class="form-group" style="margin-top: 8px;">
+          <label style="color: #1A202C; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            🕐 Horário de Funcionamento
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 12px; color: #718096;">1º Turno - Abertura</label>
+              <input type="time" id="locationHours1Open" name="business_hours_1_open" value="08:00">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #718096;">1º Turno - Fechamento</label>
+              <input type="time" id="locationHours1Close" name="business_hours_1_close" value="12:00">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #718096;">2º Turno - Abertura <span style="color: #A0AEC0;">(opcional)</span></label>
+              <input type="time" id="locationHours2Open" name="business_hours_2_open" placeholder="14:00">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #718096;">2º Turno - Fechamento <span style="color: #A0AEC0;">(opcional)</span></label>
+              <input type="time" id="locationHours2Close" name="business_hours_2_close" placeholder="18:00">
+            </div>
+          </div>
+          <small style="color: #A0AEC0; margin-top: 6px; display: block;">Deixe o 2º turno vazio se não houver intervalo (ex: das 8h às 18h contínuo)</small>
+        </div>
+
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="btnCancelModal">Cancelar</button>
           <button type="submit" class="btn btn-primary">Salvar Local</button>
@@ -149,6 +174,31 @@
             <label for="editManagerPhone">Telefone / WhatsApp</label>
             <input type="text" id="editManagerPhone">
           </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 8px;">
+          <label style="color: #1A202C; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            🕐 Horário de Funcionamento
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 12px; color: #718096;">1º Turno - Abertura</label>
+              <input type="time" id="editLocationHours1Open">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #718096;">1º Turno - Fechamento</label>
+              <input type="time" id="editLocationHours1Close">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #718096;">2º Turno - Abertura <span style="color: #A0AEC0;">(opcional)</span></label>
+              <input type="time" id="editLocationHours2Open">
+            </div>
+            <div>
+              <label style="font-size: 12px; color: #718096;">2º Turno - Fechamento <span style="color: #A0AEC0;">(opcional)</span></label>
+              <input type="time" id="editLocationHours2Close">
+            </div>
+          </div>
+          <small style="color: #A0AEC0; margin-top: 6px; display: block;">Deixe o 2º turno vazio se não houver intervalo (ex: das 8h às 18h contínuo)</small>
         </div>
 
         <div class="modal-footer">

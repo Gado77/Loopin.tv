@@ -110,12 +110,22 @@ function renderLocationsTable(locations) {
 async function handleCreateLocation(e) {
   e.preventDefault()
 
+  const hours1Open = document.getElementById('locationHours1Open').value
+  const hours1Close = document.getElementById('locationHours1Close').value
+  const hours2Open = document.getElementById('locationHours2Open').value
+  const hours2Close = document.getElementById('locationHours2Close').value
+
   const formData = {
     name: document.getElementById('locationName').value,
     address: document.getElementById('locationAddress').value,
     manager_name: document.getElementById('managerName').value,
     manager_phone: document.getElementById('managerPhone').value
   }
+
+  if (hours1Open) formData.business_hours_1_open = hours1Open
+  if (hours1Close) formData.business_hours_1_close = hours1Close
+  if (hours2Open) formData.business_hours_2_open = hours2Open
+  if (hours2Close) formData.business_hours_2_close = hours2Close
 
   setLoading('button[type="submit"]', true)
 
@@ -154,6 +164,10 @@ async function openEditModal(locationId) {
     document.getElementById('editLocationAddress').value = loc.address || ''
     document.getElementById('editManagerName').value = loc.manager_name || ''
     document.getElementById('editManagerPhone').value = loc.manager_phone || ''
+    document.getElementById('editLocationHours1Open').value = loc.business_hours_1_open ? loc.business_hours_1_open.substring(0, 5) : ''
+    document.getElementById('editLocationHours1Close').value = loc.business_hours_1_close ? loc.business_hours_1_close.substring(0, 5) : ''
+    document.getElementById('editLocationHours2Open').value = loc.business_hours_2_open ? loc.business_hours_2_open.substring(0, 5) : ''
+    document.getElementById('editLocationHours2Close').value = loc.business_hours_2_close ? loc.business_hours_2_close.substring(0, 5) : ''
 
     document.getElementById('modalEditLocation').classList.add('active')
 
@@ -173,6 +187,16 @@ async function handleEditLocation(e) {
     manager_name: document.getElementById('editManagerName').value,
     manager_phone: document.getElementById('editManagerPhone').value
   }
+
+  const hours1Open = document.getElementById('editLocationHours1Open').value
+  const hours1Close = document.getElementById('editLocationHours1Close').value
+  const hours2Open = document.getElementById('editLocationHours2Open').value
+  const hours2Close = document.getElementById('editLocationHours2Close').value
+
+  if (hours1Open) updates.business_hours_1_open = hours1Open
+  if (hours1Close) updates.business_hours_1_close = hours1Close
+  if (hours2Open) updates.business_hours_2_open = hours2Open
+  if (hours2Close) updates.business_hours_2_close = hours2Close
 
   setLoading('button[type="submit"]', true)
 

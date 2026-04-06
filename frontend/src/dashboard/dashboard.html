@@ -14,7 +14,36 @@
 
   <!-- LAYOUT PRINCIPAL -->
   <div class="main-layout">
-    <main class="content-area">
+    <!-- Header com sino -->
+    <header style="position: fixed; top: 0; left: 260px; right: 0; height: 64px; background: white; border-bottom: 1px solid #E2E8F0; display: flex; align-items: center; justify-content: flex-end; padding: 0 32px; z-index: 100;">
+      <div class="notification-bell" id="notificationBell" onclick="toggleNotifications()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+      </div>
+      <div class="notification-dropdown" id="notificationDropdown">
+        <div class="notification-header">
+          <h3>Notificações</h3>
+          <span class="notification-count" id="notificationCount">0</span>
+        </div>
+        <div class="notification-list" id="notificationList">
+          <div class="notification-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <p>Nenhuma notificação</p>
+          </div>
+        </div>
+        <div class="notification-footer" id="notificationFooter" style="display: none;">
+          <a href="#" onclick="clearAllNotifications()">Limpar todas</a>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-area" style="padding-top: 96px;">
       <!-- KPI GRID -->
       <div class="kpi-grid">
         <div class="kpi-card">
@@ -75,20 +104,6 @@
             <div class="kpi-label">Locais Cadastrados</div>
             <div class="kpi-value" id="totalLocations">0</div>
             <div class="kpi-change" id="locationsStatus">Carregando...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ALERTAS RECENTES -->
-      <div id="alertsContainer" style="display: none; margin-bottom: 24px;">
-        <div class="card" style="border-left: 4px solid #E53E3E; background: #FFF5F5;">
-          <div class="card-header">
-            <h2 style="color: #C53030; display: flex; align-items: center; gap: 8px;">
-              ⚠️ ALERTAS RECENTES
-            </h2>
-          </div>
-          <div id="alertsList" style="padding: 0 24px 24px 24px;">
-            <!-- Alertas dinâmicos -->
           </div>
         </div>
       </div>

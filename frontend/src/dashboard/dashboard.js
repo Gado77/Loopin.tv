@@ -299,37 +299,72 @@ function clearAllNotifications() {
 
 const DAY_MAP = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
 
-function isWithinBusinessHours(businessDays, hours1Open, hours1Close, hours2Open, hours2Close) {
+function isWithinBusinessHours(businessHours) {
   const now = new Date()
   const currentDay = DAY_MAP[now.getDay()]
   const currentTime = now.getHours() * 60 + now.getMinutes()
 
-  if (!businessDays || !businessDays.includes(currentDay)) {
+  if (!businessHours || !businessHours[currentDay]) {
     return false
   }
-  
+
+  const daySchedule = businessHours[currentDay]
+  if (!daySchedule.open || !daySchedule.close) {
+    return false
+  }
+
   const parseTime = (t) => {
     if (!t) return null
     const [h, m] = t.split(':').map(Number)
     return h * 60 + m
   }
 
-  const t1Open = parseTime(hours1Open)
-  const t1Close = parseTime(hours1Close)
-  const t2Open = parseTime(hours2Open)
-  const t2Close = parseTime(hours2Close)
+  const open = parseTime(daySchedule.open)
+  const close = parseTime(daySchedule.close)
 
-  if (currentTime >= t1Open && currentTime < t1Close) {
+  if (currentTime >= open && currentTime < close) {
     return true
   }
 
-  if (t2Open && t2Close) {
-    if (currentTime >= t2Open && currentTime < t2Close) {
+  if (daySchedule.turn2 && daySchedule.turn2.open && daySchedule.turn2.close) {
+    const open2 = parseTime(daySchedule.turn2.open)
+    const close2 = parseTime(daySchedule.turn2.close)
+    if (currentTime >= open2 && currentTime < close2) {
       return true
     }
   }
 
   return false
+}
+
+function formatBusinessHoursText(businessHours) {
+  if (!businessHours) return 'Sem horários'
+  
+  const parts = []
+  const dayNames = { mon: 'Seg', tue: 'Ter', wed: 'Qua', thu: 'Qui', fri: 'Sex', sat: 'Sáb', sun: 'Dom' }
+  
+  const weekdays = ['mon', 'tue', 'wed', 'thu', 'fri']
+  const hasWeekdays = weekdays.some(d => businessHours[d])
+  
+  if (hasWeekdays && businessHours.wed) {
+    const w = businessHours.wed
+    let text = `Seg-Sex: ${w.open} às ${w.close}`
+    if (w.turn2 && w.turn2.open && w.turn2.close) {
+      text += ` e ${w.turn2.open} às ${w.turn2.close}`
+    }
+    parts.push(text)
+  }
+  
+  if (businessHours.sat) {
+    const s = businessHours.sat
+    parts.push(`Sáb: ${s.open} às ${s.close}`)
+  }
+  
+  if (businessHours.sun) {
+    parts.push(`Dom: ${businessHours.sun.open} às ${businessHours.sun.close}`)
+  }
+  
+  return parts.length > 0 ? parts.join(' | ') : 'Sem horários'
 }
 
 function formatTimeAgo(timestamp) {
@@ -356,37 +391,6 @@ function formatTimeAgo(timestamp) {
   }
   
   return `${minutes}min`
-}
-
-function formatBusinessHours(hours1Open, hours1Close, hours2Open, hours2Close) {
-  const fmt = (t) => {
-    if (!t) return null
-    const [h] = t.split(':').map(Number)
-    return `${h}h`
-  }
-  
-  let text = `${fmt(hours1Open)} às ${fmt(hours1Close)}`
-  if (hours2Open && hours2Close) {
-    text += ` e ${fmt(hours2Open)} às ${fmt(hours2Close)}`
-  }
-  return text
-}
-
-function formatDays(days) {
-  if (!days || days.length === 0) return 'Sem dias definidos'
-  
-  const dayNames = {
-    mon: 'Seg', tue: 'Ter', wed: 'Qua', thu: 'Qui', fri: 'Sex', sat: 'Sáb', sun: 'Dom'
-  }
-  
-  if (days.length === 7) return 'Todos os dias'
-  
-  const mapped = days.map(d => dayNames[d] || d).sort((a, b) => {
-    const order = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
-    return order.indexOf(a) - order.indexOf(b)
-  })
-  
-  return mapped.join(', ')
 }
 
 function renderNotifications() {
@@ -440,15 +444,14 @@ async function loadNotifications() {
     // 1. Busca telas com local para checar horários
     const { data: screens } = await apiSelect('screens', {
       userId: currentUser.id,
-      select: 'id, name, last_ping, playlist_items_count, active_playlist_id, locations(business_days, business_hours_1_open, business_hours_1_close, business_hours_2_open, business_hours_2_close, name)'
+      select: 'id, name, last_ping, playlist_items_count, active_playlist_id, locations(business_hours, name)'
     })
 
     if (screens) {
       screens.forEach(s => {
         const isOnline = s.last_ping && (now - new Date(s.last_ping).getTime()) <= FIFTEEN_MINS
         const location = s.locations
-        const hasBusinessHours = location && (location.business_hours_1_open || location.business_hours_2_open)
-        const businessDays = location?.business_days || ['mon','tue','wed','thu','fri','sat']
+        const businessHours = location?.business_hours
 
         // Tela Offline há mais de 15 min
         if (s.last_ping) {
@@ -464,28 +467,16 @@ async function loadNotifications() {
         }
 
         // Horário de funcionamento
-        if (isOnline && hasBusinessHours && location) {
-          const withinHours = isWithinBusinessHours(
-            businessDays,
-            location.business_hours_1_open,
-            location.business_hours_1_close,
-            location.business_hours_2_open,
-            location.business_hours_2_close
-          )
-          const hoursText = formatBusinessHours(
-            location.business_hours_1_open,
-            location.business_hours_1_close,
-            location.business_hours_2_open,
-            location.business_hours_2_close
-          )
-          const daysText = formatDays(businessDays)
+        if (isOnline && businessHours) {
+          const withinHours = isWithinBusinessHours(businessHours)
+          const hoursText = formatBusinessHoursText(businessHours)
           
           if (!withinHours) {
             notifications.push({
               type: 'warning',
               title: 'Fora do Horário',
               message: `<strong>${escapeHtml(s.name)}</strong> está ligada fora do horário de funcionamento.`,
-              time: `${daysText} • ${hoursText}`
+              time: hoursText
             })
           }
         }

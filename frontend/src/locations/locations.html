@@ -110,60 +110,71 @@
           <label style="color: #1A202C; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
             🕐 Horário de Funcionamento
           </label>
+          <small style="color: #718096; font-weight: 400; display: block; margin-bottom: 16px;">
+            Configure os horários de funcionamento para cada dia da semana.
+          </small>
           
-          <div style="margin-bottom: 16px;">
-            <label style="font-size: 12px; color: #718096; display: block; margin-bottom: 8px;">Dias de funcionamento</label>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" name="business_days" value="mon" checked style="cursor: pointer;">
-                <span style="font-size: 13px;">Seg</span>
+          <!-- Seg-Sex -->
+          <div class="business-day-card" data-days="mon,tue,wed,thu,fri">
+            <div class="business-day-header">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="day-checkbox" data-days-group="weekdays" checked>
+                <strong>Seg-Sex</strong>
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" name="business_days" value="tue" checked style="cursor: pointer;">
-                <span style="font-size: 13px;">Ter</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" name="business_days" value="wed" checked style="cursor: pointer;">
-                <span style="font-size: 13px;">Qua</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" name="business_days" value="thu" checked style="cursor: pointer;">
-                <span style="font-size: 13px;">Qui</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" name="business_days" value="fri" checked style="cursor: pointer;">
-                <span style="font-size: 13px;">Sex</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" name="business_days" value="sat" checked style="cursor: pointer;">
-                <span style="font-size: 13px;">Sáb</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" name="business_days" value="sun" style="cursor: pointer;">
-                <span style="font-size: 13px;">Dom</span>
-              </label>
+            </div>
+            <div class="business-day-body">
+              <div class="turn-row">
+                <label>1º Turno:</label>
+                <input type="time" class="time-input" data-day="mon" data-turn="1_open" value="05:00"> às
+                <input type="time" class="time-input" data-day="mon" data-turn="1_close" value="09:00">
+              </div>
+              <div class="turn-row">
+                <label>
+                  <input type="checkbox" class="has-turn2" data-day="mon">
+                  2º Turno:
+                </label>
+                <input type="time" class="time-input" data-day="mon" data-turn="2_open" placeholder="14:00"> às
+                <input type="time" class="time-input" data-day="mon" data-turn="2_close" placeholder="21:00">
+              </div>
+              <small style="color: #A0AEC0; font-size: 11px;">Aplica para Seg, Ter, Qua, Qui e Sex</small>
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div>
-              <label style="font-size: 12px; color: #718096;">Abertura</label>
-              <input type="time" id="locationHours1Open" name="business_hours_1_open" value="08:00">
+          <!-- Sáb -->
+          <div class="business-day-card" style="margin-top: 12px;">
+            <div class="business-day-header">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="day-checkbox" data-day-single="sat" checked>
+                <strong>Sábado</strong>
+              </label>
             </div>
-            <div>
-              <label style="font-size: 12px; color: #718096;">Fechamento</label>
-              <input type="time" id="locationHours1Close" name="business_hours_1_close" value="18:00">
-            </div>
-            <div>
-              <label style="font-size: 12px; color: #718096;">2º Turno - Abertura <span style="color: #A0AEC0;">(opcional)</span></label>
-              <input type="time" id="locationHours2Open" name="business_hours_2_open" placeholder="14:00">
-            </div>
-            <div>
-              <label style="font-size: 12px; color: #718096;">2º Turno - Fechamento <span style="color: #A0AEC0;">(opcional)</span></label>
-              <input type="time" id="locationHours2Close" name="business_hours_2_close" placeholder="18:00">
+            <div class="business-day-body">
+              <div class="turn-row">
+                <label>Horário:</label>
+                <input type="time" class="time-input" data-day="sat" data-turn="1_open" value="05:00"> às
+                <input type="time" class="time-input" data-day="sat" data-turn="1_close" value="11:00">
+              </div>
+              <div class="turn-row">
+                <label>
+                  <input type="checkbox" class="has-turn2" data-day="sat">
+                  2º Turno:
+                </label>
+                <input type="time" class="time-input" data-day="sat" data-turn="2_open" placeholder="14:00"> às
+                <input type="time" class="time-input" data-day="sat" data-turn="2_close" placeholder="18:00">
+              </div>
             </div>
           </div>
-          <small style="color: #A0AEC0; margin-top: 6px; display: block;">2º turno = intervalo (ex: 12h-14h). Deixe vazio se não houver.</small>
+
+          <!-- Dom -->
+          <div class="business-day-card" style="margin-top: 12px;">
+            <div class="business-day-header">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="day-checkbox" data-day-single="sun">
+                <strong>Domingo</strong>
+              </label>
+              <span style="color: #A0AEC0; font-size: 12px;">Fechado</span>
+            </div>
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -215,60 +226,71 @@
           <label style="color: #1A202C; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
             🕐 Horário de Funcionamento
           </label>
+          <small style="color: #718096; font-weight: 400; display: block; margin-bottom: 16px;">
+            Configure os horários para cada dia da semana.
+          </small>
           
-          <div style="margin-bottom: 16px;">
-            <label style="font-size: 12px; color: #718096; display: block; margin-bottom: 8px;">Dias de funcionamento</label>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" id="editDayMon" value="mon" style="cursor: pointer;">
-                <span style="font-size: 13px;">Seg</span>
+          <!-- Seg-Sex -->
+          <div class="business-day-card">
+            <div class="business-day-header">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="day-checkbox" id="editWeekdays" data-days-group="weekdays">
+                <strong>Seg-Sex</strong>
               </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" id="editDayTue" value="tue" style="cursor: pointer;">
-                <span style="font-size: 13px;">Ter</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" id="editDayWed" value="wed" style="cursor: pointer;">
-                <span style="font-size: 13px;">Qua</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" id="editDayThu" value="thu" style="cursor: pointer;">
-                <span style="font-size: 13px;">Qui</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" id="editDayFri" value="fri" style="cursor: pointer;">
-                <span style="font-size: 13px;">Sex</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" id="editDaySat" value="sat" style="cursor: pointer;">
-                <span style="font-size: 13px;">Sáb</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <input type="checkbox" id="editDaySun" value="sun" style="cursor: pointer;">
-                <span style="font-size: 13px;">Dom</span>
-              </label>
+            </div>
+            <div class="business-day-body" id="editWeekdaysBody">
+              <div class="turn-row">
+                <label>1º Turno:</label>
+                <input type="time" class="time-input" id="edit_wed_1_open" data-day="wed" data-turn="1_open"> às
+                <input type="time" class="time-input" id="edit_wed_1_close" data-day="wed" data-turn="1_close">
+              </div>
+              <div class="turn-row">
+                <label>
+                  <input type="checkbox" class="has-turn2" id="editWeekdaysTurn2">
+                  2º Turno:
+                </label>
+                <input type="time" class="time-input" id="edit_wed_2_open" data-day="wed" data-turn="2_open"> às
+                <input type="time" class="time-input" id="edit_wed_2_close" data-day="wed" data-turn="2_close">
+              </div>
+              <small style="color: #A0AEC0; font-size: 11px;">Aplica para Seg, Ter, Qua, Qui e Sex</small>
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div>
-              <label style="font-size: 12px; color: #718096;">Abertura</label>
-              <input type="time" id="editLocationHours1Open">
+          <!-- Sáb -->
+          <div class="business-day-card" style="margin-top: 12px;">
+            <div class="business-day-header">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="day-checkbox" id="editDaySat" data-day-single="sat">
+                <strong>Sábado</strong>
+              </label>
             </div>
-            <div>
-              <label style="font-size: 12px; color: #718096;">Fechamento</label>
-              <input type="time" id="editLocationHours1Close">
-            </div>
-            <div>
-              <label style="font-size: 12px; color: #718096;">2º Turno - Abertura <span style="color: #A0AEC0;">(opcional)</span></label>
-              <input type="time" id="editLocationHours2Open">
-            </div>
-            <div>
-              <label style="font-size: 12px; color: #718096;">2º Turno - Fechamento <span style="color: #A0AEC0;">(opcional)</span></label>
-              <input type="time" id="editLocationHours2Close">
+            <div class="business-day-body" id="editSatBody">
+              <div class="turn-row">
+                <label>1º Turno:</label>
+                <input type="time" class="time-input" id="edit_sat_1_open" data-day="sat" data-turn="1_open"> às
+                <input type="time" class="time-input" id="edit_sat_1_close" data-day="sat" data-turn="1_close">
+              </div>
+              <div class="turn-row">
+                <label>
+                  <input type="checkbox" class="has-turn2" id="editSatTurn2">
+                  2º Turno:
+                </label>
+                <input type="time" class="time-input" id="edit_sat_2_open" data-day="sat" data-turn="2_open"> às
+                <input type="time" class="time-input" id="edit_sat_2_close" data-day="sat" data-turn="2_close">
+              </div>
             </div>
           </div>
-          <small style="color: #A0AEC0; margin-top: 6px; display: block;">2º turno = intervalo (ex: 12h-14h). Deixe vazio se não houver.</small>
+
+          <!-- Dom -->
+          <div class="business-day-card" style="margin-top: 12px;">
+            <div class="business-day-header">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="day-checkbox" id="editDaySun" data-day-single="sun">
+                <strong>Domingo</strong>
+              </label>
+              <span style="color: #A0AEC0; font-size: 12px;" id="editSunStatus">Fechado</span>
+            </div>
+          </div>
         </div>
 
         <div class="modal-footer">

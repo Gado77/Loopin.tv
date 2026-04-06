@@ -107,16 +107,70 @@ function renderLocationsTable(locations) {
 
 // ==================== CRIAR ====================
 
+function getBusinessHoursFromForm(prefix = '') {
+  const businessHours = {}
+
+  const days = {
+    mon: prefix === 'edit' ? 'wed' : 'mon',
+    tue: prefix === 'edit' ? 'wed' : 'tue',
+    wed: prefix === 'edit' ? 'wed' : 'wed',
+    thu: prefix === 'edit' ? 'wed' : 'thu',
+    fri: prefix === 'edit' ? 'wed' : 'fri',
+    sat: 'sat',
+    sun: 'sun'
+  }
+
+  const weekdaysCheckbox = document.querySelector(`#${prefix}Weekdays`) || document.querySelector(`input[data-days-group="weekdays"]`)
+  const satCheckbox = document.querySelector(`#${prefix}DaySat`) || document.querySelector(`input[data-day-single="sat"]`)
+  const sunCheckbox = document.querySelector(`#${prefix}DaySun`) || document.querySelector(`input[data-day-single="sun"]`)
+
+  if (weekdaysCheckbox?.checked) {
+    const day = 'wed'
+    const open = document.querySelector(`[data-day="${day}"][data-turn="1_open"]`)?.value
+    const close = document.querySelector(`[data-day="${day}"][data-turn="1_close"]`)?.value
+    const hasTurn2 = document.querySelector(`#${prefix}WeekdaysTurn2`)?.checked
+    
+    businessHours.mon = { open, close }
+    businessHours.tue = { open, close }
+    businessHours.wed = { open, close }
+    businessHours.thu = { open, close }
+    businessHours.fri = { open, close }
+    
+    if (hasTurn2 && open) {
+      const open2 = document.querySelector(`[data-day="${day}"][data-turn="2_open"]`)?.value
+      const close2 = document.querySelector(`[data-day="${day}"][data-turn="2_close"]`)?.value
+      businessHours.mon.turn2 = { open: open2, close: close2 }
+      businessHours.tue.turn2 = { open: open2, close: close2 }
+      businessHours.wed.turn2 = { open: open2, close: close2 }
+      businessHours.thu.turn2 = { open: open2, close: close2 }
+      businessHours.fri.turn2 = { open: open2, close: close2 }
+    }
+  }
+
+  if (satCheckbox?.checked) {
+    const open = document.querySelector(`[data-day="sat"][data-turn="1_open"]`)?.value
+    const close = document.querySelector(`[data-day="sat"][data-turn="1_close"]`)?.value
+    const hasTurn2 = document.querySelector(`#${prefix}SatTurn2`)?.checked
+    
+    businessHours.sat = { open, close }
+    if (hasTurn2 && open) {
+      const open2 = document.querySelector(`[data-day="sat"][data-turn="2_open"]`)?.value
+      const close2 = document.querySelector(`[data-day="sat"][data-turn="2_close"]`)?.value
+      businessHours.sat.turn2 = { open: open2, close: close2 }
+    }
+  }
+
+  if (sunCheckbox?.checked) {
+    const open = document.querySelector(`[data-day="sun"][data-turn="1_open"]`)?.value
+    const close = document.querySelector(`[data-day="sun"][data-turn="1_close"]`)?.value
+    businessHours.sun = { open, close }
+  }
+
+  return businessHours
+}
+
 async function handleCreateLocation(e) {
   e.preventDefault()
-
-  const hours1Open = document.getElementById('locationHours1Open').value
-  const hours1Close = document.getElementById('locationHours1Close').value
-  const hours2Open = document.getElementById('locationHours2Open').value
-  const hours2Close = document.getElementById('locationHours2Close').value
-
-  const daysCheckboxes = document.querySelectorAll('input[name="business_days"]:checked')
-  const businessDays = Array.from(daysCheckboxes).map(cb => cb.value)
 
   const formData = {
     name: document.getElementById('locationName').value,
@@ -125,11 +179,10 @@ async function handleCreateLocation(e) {
     manager_phone: document.getElementById('managerPhone').value
   }
 
-  if (businessDays.length > 0) formData.business_days = businessDays
-  if (hours1Open) formData.business_hours_1_open = hours1Open
-  if (hours1Close) formData.business_hours_1_close = hours1Close
-  if (hours2Open) formData.business_hours_2_open = hours2Open
-  if (hours2Close) formData.business_hours_2_close = hours2Close
+  const businessHours = getBusinessHoursFromForm()
+  if (Object.keys(businessHours).length > 0) {
+    formData.business_hours = businessHours
+  }
 
   setLoading('button[type="submit"]', true)
 
@@ -168,19 +221,38 @@ async function openEditModal(locationId) {
     document.getElementById('editLocationAddress').value = loc.address || ''
     document.getElementById('editManagerName').value = loc.manager_name || ''
     document.getElementById('editManagerPhone').value = loc.manager_phone || ''
-    document.getElementById('editLocationHours1Open').value = loc.business_hours_1_open ? loc.business_hours_1_open.substring(0, 5) : ''
-    document.getElementById('editLocationHours1Close').value = loc.business_hours_1_close ? loc.business_hours_1_close.substring(0, 5) : ''
-    document.getElementById('editLocationHours2Open').value = loc.business_hours_2_open ? loc.business_hours_2_open.substring(0, 5) : ''
-    document.getElementById('editLocationHours2Close').value = loc.business_hours_2_close ? loc.business_hours_2_close.substring(0, 5) : ''
 
-    const days = loc.business_days || ['mon','tue','wed','thu','fri','sat']
-    document.getElementById('editDayMon').checked = days.includes('mon')
-    document.getElementById('editDayTue').checked = days.includes('tue')
-    document.getElementById('editDayWed').checked = days.includes('wed')
-    document.getElementById('editDayThu').checked = days.includes('thu')
-    document.getElementById('editDayFri').checked = days.includes('fri')
-    document.getElementById('editDaySat').checked = days.includes('sat')
-    document.getElementById('editDaySun').checked = days.includes('sun')
+    const bh = loc.business_hours || {}
+
+    const weekdays = ['mon', 'tue', 'wed', 'thu', 'fri']
+    const hasWeekdays = weekdays.some(d => bh[d])
+    document.getElementById('editWeekdays').checked = hasWeekdays
+    
+    if (hasWeekdays && bh.wed) {
+      document.getElementById('edit_wed_1_open').value = bh.wed.open || ''
+      document.getElementById('edit_wed_1_close').value = bh.wed.close || ''
+      if (bh.wed.turn2) {
+        document.getElementById('editWeekdaysTurn2').checked = true
+        document.getElementById('edit_wed_2_open').value = bh.wed.turn2.open || ''
+        document.getElementById('edit_wed_2_close').value = bh.wed.turn2.close || ''
+      }
+    }
+
+    const hasSat = bh.sat
+    document.getElementById('editDaySat').checked = hasSat
+    if (hasSat) {
+      document.getElementById('edit_sat_1_open').value = bh.sat.open || ''
+      document.getElementById('edit_sat_1_close').value = bh.sat.close || ''
+      if (bh.sat.turn2) {
+        document.getElementById('editSatTurn2').checked = true
+        document.getElementById('edit_sat_2_open').value = bh.sat.turn2.open || ''
+        document.getElementById('edit_sat_2_close').value = bh.sat.turn2.close || ''
+      }
+    }
+
+    const hasSun = bh.sun
+    document.getElementById('editDaySun').checked = hasSun
+    document.getElementById('editSunStatus').textContent = hasSun ? 'Aberto' : 'Fechado'
 
     document.getElementById('modalEditLocation').classList.add('active')
 
@@ -201,22 +273,8 @@ async function handleEditLocation(e) {
     manager_phone: document.getElementById('editManagerPhone').value
   }
 
-  const hours1Open = document.getElementById('editLocationHours1Open').value
-  const hours1Close = document.getElementById('editLocationHours1Close').value
-  const hours2Open = document.getElementById('editLocationHours2Open').value
-  const hours2Close = document.getElementById('editLocationHours2Close').value
-
-  const dayInputs = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-  const selectedDays = dayInputs
-    .filter(d => document.getElementById(`editDay${d}`).checked)
-    .map(d => d.toLowerCase().replace('tue', 'tue').replace('thu', 'thu'))
-
-  if (selectedDays.length > 0) updates.business_days = selectedDays
-
-  if (hours1Open) updates.business_hours_1_open = hours1Open
-  if (hours1Close) updates.business_hours_1_close = hours1Close
-  if (hours2Open) updates.business_hours_2_open = hours2Open
-  if (hours2Close) updates.business_hours_2_close = hours2Close
+  const businessHours = getBusinessHoursFromForm('edit')
+  updates.business_hours = businessHours
 
   setLoading('button[type="submit"]', true)
 

@@ -325,6 +325,32 @@ function isWithinBusinessHours(hours1Open, hours1Close, hours2Open, hours2Close)
   return false
 }
 
+function formatTimeAgo(timestamp) {
+  if (!timestamp) return ''
+  
+  const now = Date.now()
+  const diff = now - new Date(timestamp).getTime()
+  const minutes = Math.floor(diff / 60000)
+  const hours = Math.floor(diff / 3600000)
+  const days = Math.floor(diff / 86400000)
+
+  if (days > 0) {
+    const remainingHours = hours % 24
+    return remainingHours > 0 
+      ? `${days} dia${days > 1 ? 's' : ''} e ${remainingHours}h`
+      : `${days} dia${days > 1 ? 's' : ''}`
+  }
+  
+  if (hours > 0) {
+    const remainingMinutes = minutes % 60
+    return remainingMinutes > 0
+      ? `${hours}h e ${remainingMinutes}min`
+      : `${hours}h`
+  }
+  
+  return `${minutes}min`
+}
+
 function formatBusinessHours(hours1Open, hours1Close, hours2Open, hours2Close) {
   const fmt = (t) => {
     if (!t) return null
@@ -403,16 +429,16 @@ async function loadNotifications() {
         if (s.last_ping) {
           const lastPing = new Date(s.last_ping).getTime()
           if (now - lastPing > FIFTEEN_MINS) {
-            const minutes = Math.floor((now - lastPing) / 60000)
             notifications.push({
               type: 'danger',
               title: 'Tela Desconectada',
-              message: `A tela <strong>${escapeHtml(s.name)}</strong> está offline há ${minutes} minutos.`
+              message: `A tela <strong>${escapeHtml(s.name)}</strong> está offline há ${formatTimeAgo(s.last_ping)}.`,
+              time: formatTimeAgo(s.last_ping)
             })
           }
         }
 
-        // Tela ligada fora do horário de funcionamento
+        // Horário de funcionamento
         if (isOnline && hasBusinessHours && location) {
           const withinHours = isWithinBusinessHours(
             location.business_hours_1_open,
@@ -420,40 +446,19 @@ async function loadNotifications() {
             location.business_hours_2_open,
             location.business_hours_2_close
           )
+          const hoursText = formatBusinessHours(
+            location.business_hours_1_open,
+            location.business_hours_1_close,
+            location.business_hours_2_open,
+            location.business_hours_2_close
+          )
+          
           if (!withinHours) {
-            const hoursText = formatBusinessHours(
-              location.business_hours_1_open,
-              location.business_hours_1_close,
-              location.business_hours_2_open,
-              location.business_hours_2_close
-            )
             notifications.push({
               type: 'warning',
               title: 'Fora do Horário',
-              message: `<strong>${escapeHtml(s.name)}</strong> está ligada fora do horário de funcionamento do local (${hoursText}).`
-            })
-          }
-        }
-
-        // Local ligado no horário de fechamento
-        if (isOnline && hasBusinessHours && location) {
-          const withinHours = isWithinBusinessHours(
-            location.business_hours_1_open,
-            location.business_hours_1_close,
-            location.business_hours_2_open,
-            location.business_hours_2_close
-          )
-          if (withinHours) {
-            const hoursText = formatBusinessHours(
-              location.business_hours_1_open,
-              location.business_hours_1_close,
-              location.business_hours_2_open,
-              location.business_hours_2_close
-            )
-            notifications.push({
-              type: 'info',
-              title: 'Exibindo conteúdo',
-              message: `<strong>${escapeHtml(s.name)}</strong> em ${escapeHtml(location.name)} (${hoursText}).`
+              message: `<strong>${escapeHtml(s.name)}</strong> está ligada fora do horário de funcionamento (${hoursText}).`,
+              time: hoursText
             })
           }
         }
@@ -491,10 +496,13 @@ async function loadNotifications() {
     if (campaigns) {
       campaigns.forEach(c => {
         if (c.end_date >= today && c.end_date <= threeDaysFromNow) {
+          const daysUntil = Math.ceil((new Date(c.end_date).getTime() - now) / 86400000)
+          let timeText = daysUntil === 1 ? 'amanhã' : `em ${daysUntil} dias`
           notifications.push({
             type: 'info',
             title: 'Campanha Expirando',
-            message: `<strong>${escapeHtml(c.name || 'Sem nome')}</strong> encerra em ${formatDate(c.end_date)}.`
+            message: `<strong>${escapeHtml(c.name || 'Sem nome')}</strong> encerra ${timeText}.`,
+            time: formatDate(c.end_date)
           })
         }
       })

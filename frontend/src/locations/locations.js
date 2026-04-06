@@ -1,35 +1,34 @@
 /* ==================== LOCATIONS.JS ====================
-   Gerenciamento de Locais (CRUD com API Helpers)
-   Muito mais limpo e eficiente
+   Gerenciamento de Locais com horários dinâmicos
 */
 
 let currentUser = null
 let searchTimeout = null
 
-// ==================== INICIALIZAÇÃO ====================
+const DAYS = [
+  { key: 'mon', label: 'Seg' },
+  { key: 'tue', label: 'Ter' },
+  { key: 'wed', label: 'Qua' },
+  { key: 'thu', label: 'Qui' },
+  { key: 'fri', label: 'Sex' },
+  { key: 'sat', label: 'Sáb' },
+  { key: 'sun', label: 'Dom' }
+]
 
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    // 1. Autenticação
     currentUser = await checkAuth()
     if (!currentUser) return
 
-    // 2. Sidebar
     await loadSidebar('locations')
-
-    // 3. Setup
     setupEventListeners()
-
-    // 4. Carregar dados
     loadLocations()
 
   } catch (error) {
-    console.error('❌ Erro na inicialização:', error)
+    console.error('Erro na inicialização:', error)
     showNotification('Erro ao carregar página', 'error')
   }
 })
-
-// ==================== CARREGAMENTO ====================
 
 async function loadLocations(searchTerm = '') {
   const tbody = document.getElementById('locationsList')
@@ -38,7 +37,6 @@ async function loadLocations(searchTerm = '') {
     let result
 
     if (searchTerm.trim()) {
-      // Busca com termo
       result = await apiSearch(
         'locations',
         searchTerm,
@@ -46,7 +44,6 @@ async function loadLocations(searchTerm = '') {
         currentUser.id
       )
     } else {
-      // Carrega todos
       result = await apiSelect('locations', {
         userId: currentUser.id,
         select: '*, screens(count)',
@@ -61,7 +58,7 @@ async function loadLocations(searchTerm = '') {
     renderLocationsTable(locations)
 
   } catch (error) {
-    console.error('❌ Erro ao carregar:', error)
+    console.error('Erro ao carregar:', error)
     tbody.innerHTML = `<tr><td colspan="6" style="color: #E53E3E; text-align: center;">Erro ao carregar dados</td></tr>`
   }
 }
@@ -105,61 +102,153 @@ function renderLocationsTable(locations) {
   }).join('')
 }
 
-// ==================== CRIAR ====================
+// ==================== BUSINESS HOURS DINÂMICO ====================
 
-function getBusinessHoursFromForm(prefix = '') {
+function createHoursGroupHTML(groupId = null, selectedDays = [], turns = [{ open: '09:00', close: '12:00' }]) {
+  const id = groupId || `group_${Date.now()}`
+  
+  const daysHTML = DAYS.map(day => {
+    const isSelected = selectedDays.includes(day.key)
+    return `<button type="button" class="day-btn ${isSelected ? 'selected' : ''}" data-day="${day.key}">${day.label}</button>`
+  }).join('')
+
+  const turnsHTML = turns.map((turn, index) => `
+    <div class="turn-item" data-turn-index="${index}">
+      <label>Das:</label>
+      <input type="time" class="time-input turn-open" value="${turn.open || ''}">
+      <span>às</span>
+      <input type="time" class="time-input turn-close" value="${turn.close || ''}">
+    </div>
+  `).join('')
+
+  const hasTurn2 = turns.length > 1
+  const addTurnBtn = hasTurn2 ? '' : `<button type="button" class="btn-add-turn" onclick="addTurn(this)">+ Adicionar horário</button>`
+
+  return `
+    <div class="hours-group" data-group-id="${id}">
+      <button type="button" class="btn-remove-group" onclick="removeHoursGroup(this)">✕</button>
+      
+      <div class="day-selector">
+        ${daysHTML}
+      </div>
+      
+      ${turnsHTML}
+      
+      ${addTurnBtn}
+    </div>
+  `
+}
+
+function addHoursGroup(containerId = 'businessHoursContainer', selectedDays = [], turns = []) {
+  const container = document.getElementById(containerId)
+  const html = createHoursGroupHTML(null, selectedDays, turns.length > 0 ? turns : [{ open: '09:00', close: '12:00' }])
+  container.insertAdjacentHTML('beforeend', html)
+  attachDayButtonListeners(container.lastElementChild)
+}
+
+function removeHoursGroup(btn) {
+  btn.closest('.hours-group').remove()
+}
+
+function addTurn(btn) {
+  const group = btn.closest('.hours-group')
+  const turnItem = document.createElement('div')
+  turnItem.className = 'turn-item'
+  turnItem.dataset.turnIndex = group.querySelectorAll('.turn-item').length
+  turnItem.innerHTML = `
+    <label>Das:</label>
+    <input type="time" class="time-input turn-open" value="14:00">
+    <span>às</span>
+    <input type="time" class="time-input turn-close" value="18:00">
+  `
+  btn.insertAdjacentHTML('beforebegin', turnItem.outerHTML)
+  btn.remove()
+}
+
+function toggleDay(btn) {
+  btn.classList.toggle('selected')
+}
+
+function attachDayButtonListeners(groupEl) {
+  groupEl.querySelectorAll('.day-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleDay(btn))
+  })
+}
+
+function getBusinessHoursFromForm(containerId = 'businessHoursContainer') {
+  const container = document.getElementById(containerId)
+  const groups = container.querySelectorAll('.hours-group')
   const businessHours = {}
 
-  const weekdaysCheckbox = document.getElementById(prefix + 'Weekdays') || document.querySelector('[data-days-group="weekdays"]')
-  const satCheckbox = document.getElementById(prefix + 'DaySat') || document.querySelector('[data-day-single="sat"]')
-  const sunCheckbox = document.getElementById(prefix + 'DaySun') || document.querySelector('[data-day-single="sun"]')
+  groups.forEach(group => {
+    const selectedDays = []
+    group.querySelectorAll('.day-btn.selected').forEach(btn => {
+      selectedDays.push(btn.dataset.day)
+    })
 
-  if (weekdaysCheckbox?.checked) {
-    const day = 'wed'
-    const open = document.querySelector(`[data-day="${day}"][data-turn="1_open"]`)?.value
-    const close = document.querySelector(`[data-day="${day}"][data-turn="1_close"]`)?.value
-    const hasTurn2 = document.getElementById(prefix + 'WeekdaysTurn2')?.checked
-    
-    if (open && close) {
-      businessHours.mon = { open, close }
-      businessHours.tue = { open, close }
-      businessHours.wed = { open, close }
-      businessHours.thu = { open, close }
-      businessHours.fri = { open, close }
-      
-      if (hasTurn2) {
-        const open2 = document.querySelector(`[data-day="${day}"][data-turn="2_open"]`)?.value
-        const close2 = document.querySelector(`[data-day="${day}"][data-turn="2_close"]`)?.value
-        if (open2 && close2) {
-          businessHours.mon.turn2 = { open: open2, close: close2 }
-          businessHours.tue.turn2 = { open: open2, close: close2 }
-          businessHours.wed.turn2 = { open: open2, close: close2 }
-          businessHours.thu.turn2 = { open: open2, close: close2 }
-          businessHours.fri.turn2 = { open: open2, close: close2 }
+    if (selectedDays.length === 0) return
+
+    const turns = []
+    group.querySelectorAll('.turn-item').forEach(turnEl => {
+      const open = turnEl.querySelector('.turn-open')?.value
+      const close = turnEl.querySelector('.turn-close')?.value
+      if (open && close) {
+        turns.push({ open, close })
+      }
+    })
+
+    if (turns.length === 0) return
+
+    selectedDays.forEach(day => {
+      if (turns.length === 1) {
+        businessHours[day] = { open: turns[0].open, close: turns[0].close }
+      } else {
+        businessHours[day] = { open: turns[0].open, close: turns[0].close }
+        if (turns[1]) {
+          businessHours[day].turn2 = { open: turns[1].open, close: turns[1].close }
         }
       }
-    }
-  }
-
-  if (satCheckbox?.checked) {
-    const open = document.querySelector('[data-day="sat"][data-turn="1_open"]')?.value
-    const close = document.querySelector('[data-day="sat"][data-turn="1_close"]')?.value
-    
-    if (open && close) {
-      businessHours.sat = { open, close }
-    }
-  }
-
-  if (sunCheckbox?.checked) {
-    const open = document.querySelector('[data-day="sun"][data-turn="1_open"]')?.value
-    const close = document.querySelector('[data-day="sun"][data-turn="1_close"]')?.value
-    if (open && close) {
-      businessHours.sun = { open, close }
-    }
-  }
+    })
+  })
 
   return businessHours
 }
+
+function loadBusinessHoursToForm(businessHours, containerId = 'editBusinessHoursContainer') {
+  const container = document.getElementById(containerId)
+  container.innerHTML = ''
+
+  if (!businessHours || Object.keys(businessHours).length === 0) {
+    addHoursGroup(containerId)
+    return
+  }
+
+  const dayGroups = {}
+  
+  Object.entries(businessHours).forEach(([day, schedule]) => {
+    const key = JSON.stringify({
+      open: schedule.open,
+      close: schedule.close,
+      turn2: schedule.turn2
+    })
+    
+    if (!dayGroups[key]) {
+      dayGroups[key] = []
+    }
+    dayGroups[key].push(day)
+  })
+
+  Object.values(dayGroups).forEach(days => {
+    const firstDay = businessHours[days[0]]
+    const turns = [{ open: firstDay.open, close: firstDay.close }]
+    if (firstDay.turn2) {
+      turns.push({ open: firstDay.turn2.open, close: firstDay.turn2.close })
+    }
+    addHoursGroup(containerId, days, turns)
+  })
+}
+
+// ==================== CRIAR ====================
 
 async function handleCreateLocation(e) {
   e.preventDefault()
@@ -171,7 +260,7 @@ async function handleCreateLocation(e) {
     manager_phone: document.getElementById('managerPhone').value
   }
 
-  const businessHours = getBusinessHoursFromForm()
+  const businessHours = getBusinessHoursFromForm('businessHoursContainer')
   if (Object.keys(businessHours).length > 0) {
     formData.business_hours = businessHours
   }
@@ -184,12 +273,13 @@ async function handleCreateLocation(e) {
     if (error) throw error
 
     document.getElementById('modalNewLocation').classList.remove('active')
-    resetForm('formNewLocation')
+    document.getElementById('formNewLocation').reset()
+    document.getElementById('businessHoursContainer').innerHTML = ''
     loadLocations()
     showNotification('Local cadastrado com sucesso!', 'success')
 
   } catch (error) {
-    console.error('❌ Erro:', error)
+    console.error('Erro:', error)
     showNotification('Erro ao criar local', 'error')
   } finally {
     setLoading('button[type="submit"]', false, 'Salvar Local')
@@ -214,44 +304,13 @@ async function openEditModal(locationId) {
     document.getElementById('editManagerName').value = loc.manager_name || ''
     document.getElementById('editManagerPhone').value = loc.manager_phone || ''
 
-    const bh = loc.business_hours || {}
-
-    const weekdays = ['mon', 'tue', 'wed', 'thu', 'fri']
-    const hasWeekdays = weekdays.some(d => bh[d])
-    document.getElementById('editWeekdays').checked = hasWeekdays
-    document.getElementById('editWeekdaysBody').classList.toggle('hidden', !hasWeekdays)
-    
-    if (hasWeekdays && bh.wed) {
-      document.getElementById('edit_wed_1_open').value = bh.wed.open || ''
-      document.getElementById('edit_wed_1_close').value = bh.wed.close || ''
-      if (bh.wed.turn2) {
-        document.getElementById('editWeekdaysTurn2').checked = true
-        document.getElementById('edit_wed_2_open').value = bh.wed.turn2.open || ''
-        document.getElementById('edit_wed_2_close').value = bh.wed.turn2.close || ''
-      }
-    }
-
-    const hasSat = bh.sat
-    document.getElementById('editDaySat').checked = hasSat
-    document.getElementById('editSatBody').classList.toggle('hidden', !hasSat)
-    if (hasSat) {
-      document.getElementById('edit_sat_1_open').value = bh.sat.open || ''
-      document.getElementById('edit_sat_1_close').value = bh.sat.close || ''
-    }
-
-    const hasSun = bh.sun
-    document.getElementById('editDaySun').checked = !!hasSun
-    document.getElementById('editSunBody').classList.toggle('hidden', !hasSun)
-    if (hasSun) {
-      document.getElementById('edit_sun_1_open').value = hasSun.open || ''
-      document.getElementById('edit_sun_1_close').value = hasSun.close || ''
-    }
+    loadBusinessHoursToForm(loc.business_hours, 'editBusinessHoursContainer')
 
     document.getElementById('modalEditLocation').classList.add('active')
 
   } catch (error) {
-    console.error('❌ Erro:', error)
-    showNotification('Erro ao caregar local', 'error')
+    console.error('Erro:', error)
+    showNotification('Erro ao carregar local', 'error')
   }
 }
 
@@ -266,7 +325,7 @@ async function handleEditLocation(e) {
     manager_phone: document.getElementById('editManagerPhone').value
   }
 
-  const businessHours = getBusinessHoursFromForm('edit')
+  const businessHours = getBusinessHoursFromForm('editBusinessHoursContainer')
   updates.business_hours = businessHours
 
   setLoading('button[type="submit"]', true)
@@ -281,7 +340,7 @@ async function handleEditLocation(e) {
     showNotification('Local atualizado com sucesso!', 'success')
 
   } catch (error) {
-    console.error('❌ Erro:', error)
+    console.error('Erro:', error)
     showNotification('Erro ao atualizar local', 'error')
   } finally {
     setLoading('button[type="submit"]', false, 'Salvar Alterações')
@@ -309,74 +368,28 @@ async function deleteLocation(id) {
     showNotification('Local excluído com sucesso!', 'success')
 
   } catch (error) {
-    console.error('❌ Erro:', error)
+    console.error('Erro:', error)
     showNotification('Erro ao excluir local', 'error')
   }
 }
 
 // ==================== EVENTOS ====================
 
-function setupBusinessHoursToggle() {
-  document.querySelectorAll('[data-days-group="weekdays"]').forEach(cb => {
-    cb.addEventListener('change', (e) => {
-      const body = e.target.closest('.business-day-card').querySelector('.business-day-body')
-      if (body) body.classList.toggle('hidden', !e.target.checked)
-    })
-  })
-  
-  document.querySelectorAll('[data-day-single]').forEach(cb => {
-    cb.addEventListener('change', (e) => {
-      const day = e.target.dataset.daySingle
-      const card = e.target.closest('.business-day-card')
-      const body = card.querySelector('.business-day-body')
-      
-      if (day === 'sun') {
-        const status = card.querySelector('#editSunStatus') || card.querySelector('.sun-status')
-        if (status) status.textContent = e.target.checked ? 'Aberto' : 'Fechado'
-        return
-      }
-      
-      if (body) body.classList.toggle('hidden', !e.target.checked)
-    })
-  })
-  
-  document.querySelectorAll('.has-turn2').forEach(cb => {
-    cb.addEventListener('change', (e) => {
-      const card = e.target.closest('.business-day-card')
-      const rows = card.querySelectorAll('.turn2-row')
-      rows.forEach(row => row.classList.toggle('hidden', !e.target.checked))
-    })
-  })
-}
-
 function setupEventListeners() {
-  // Modal - Criar
-  setupModalHandlers(
-    'modalNewLocation',
-    'btnOpenModal',
-    'btnCloseModal',
-    'btnCancelModal'
-  )
+  setupModalHandlers('modalNewLocation', 'btnOpenModal', 'btnCloseModal', 'btnCancelModal')
+  setupModalHandlers('modalEditLocation', null, 'btnCloseEditModal', 'btnCancelEditModal')
 
-  // Modal - Editar
-  setupModalHandlers(
-    'modalEditLocation',
-    null,
-    'btnCloseEditModal',
-    'btnCancelEditModal'
-  )
+  document.getElementById('formNewLocation').addEventListener('submit', handleCreateLocation)
+  document.getElementById('formEditLocation').addEventListener('submit', handleEditLocation)
 
-  setupBusinessHoursToggle()
+  document.getElementById('btnAddHoursGroup').addEventListener('click', () => {
+    addHoursGroup('businessHoursContainer')
+  })
 
-  // Form - Criar
-  const formNew = document.getElementById('formNewLocation')
-  if (formNew) formNew.addEventListener('submit', handleCreateLocation)
+  document.getElementById('btnEditAddHoursGroup').addEventListener('click', () => {
+    addHoursGroup('editBusinessHoursContainer')
+  })
 
-  // Form - Editar
-  const formEdit = document.getElementById('formEditLocation')
-  if (formEdit) formEdit.addEventListener('submit', handleEditLocation)
-
-  // Busca
   const searchInput = document.getElementById('searchInput')
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
@@ -385,8 +398,6 @@ function setupEventListeners() {
     })
   }
 }
-
-// ==================== UTILITÁRIOS ====================
 
 function formatPhone(v) {
   if (!v) return ''

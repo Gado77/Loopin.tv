@@ -1,23 +1,18 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Locais - Loopin Marketing Indoor</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <!-- BASE GLOBAL -->
   <link rel="stylesheet" href="/src/shared/theme.css">
-  <!-- CUSTOMIZAÇÕES DA PÁGINA -->
   <link rel="stylesheet" href="./locations.css">
 </head>
 <body>
-  <!-- SIDEBAR -->
   <div id="sidebar-container"></div>
 
-  <!-- LAYOUT PRINCIPAL -->
   <div class="main-layout">
     <main class="content-area">
-      <!-- HEADER -->
       <div class="page-header">
         <div class="header-title">
           <h1>Gerenciamento de Locais</h1>
@@ -32,7 +27,6 @@
         </button>
       </div>
 
-      <!-- FILTROS -->
       <div class="filter-bar">
         <div class="search-box">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -43,7 +37,6 @@
         </div>
       </div>
 
-      <!-- TABELA -->
       <div class="card">
         <div class="table-container">
           <table>
@@ -106,77 +99,20 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 8px;">
+        <div class="form-group">
           <label style="color: #1A202C; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
             🕐 Horário de Funcionamento
           </label>
-          <small style="color: #718096; font-weight: 400; display: block; margin-bottom: 16px;">
-            Configure os horários de funcionamento para cada dia da semana.
-          </small>
           
-          <!-- Seg-Sex -->
-          <div class="business-day-card" style="margin-bottom: 12px;">
-            <div class="business-day-header">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" class="day-checkbox" data-days-group="weekdays" checked>
-                <strong>Seg-Sex</strong>
-              </label>
-            </div>
-            <div class="business-day-body">
-              <div class="turn-row">
-                <label>Das:</label>
-                <input type="time" class="time-input" data-day="wed" data-turn="1_open" value="05:00">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" data-day="wed" data-turn="1_close" value="09:00">
-              </div>
-              <div class="turn-row">
-                <label style="display: flex; align-items: center; gap: 8px;">
-                  <input type="checkbox" class="has-turn2">
-                  Intervalo das:
-                </label>
-                <input type="time" class="time-input" data-day="wed" data-turn="2_open" placeholder="14:00">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" data-day="wed" data-turn="2_close" placeholder="21:00">
-              </div>
-              <small style="color: #A0AEC0; font-size: 11px;">Aplica Seg, Ter, Qua, Qui e Sex</small>
-            </div>
-          </div>
-
-          <!-- Sáb -->
-          <div class="business-day-card" style="margin-bottom: 12px;">
-            <div class="business-day-header">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" class="day-checkbox" data-day-single="sat">
-                <strong>Sábado</strong>
-              </label>
-            </div>
-            <div class="business-day-body hidden">
-              <div class="turn-row">
-                <label>Das:</label>
-                <input type="time" class="time-input" data-day="sat" data-turn="1_open" value="05:00">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" data-day="sat" data-turn="1_close" value="11:00">
-              </div>
-            </div>
-          </div>
-
-          <!-- Dom -->
-          <div class="business-day-card" style="margin-bottom: 12px;">
-            <div class="business-day-header">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" class="day-checkbox" data-day-single="sun">
-                <strong>Domingo</strong>
-              </label>
-            </div>
-            <div class="business-day-body hidden">
-              <div class="turn-row">
-                <label>Das:</label>
-                <input type="time" class="time-input" data-day="sun" data-turn="1_open">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" data-day="sun" data-turn="1_close">
-              </div>
-            </div>
-          </div>
+          <div id="businessHoursContainer"></div>
+          
+          <button type="button" id="btnAddHoursGroup" class="btn-add-hours-group">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Adicionar horários
+          </button>
         </div>
 
         <div class="modal-footer">
@@ -224,74 +160,20 @@
           </div>
         </div>
 
-        <div class="form-group" style="margin-top: 8px;">
+        <div class="form-group">
           <label style="color: #1A202C; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
             🕐 Horário de Funcionamento
           </label>
           
-          <!-- Seg-Sex -->
-          <div class="business-day-card" style="margin-bottom: 12px;">
-            <div class="business-day-header">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" class="day-checkbox" id="editWeekdays" data-days-group="weekdays">
-                <strong>Seg-Sex</strong>
-              </label>
-            </div>
-            <div class="business-day-body hidden" id="editWeekdaysBody">
-              <div class="turn-row">
-                <label>Das:</label>
-                <input type="time" class="time-input" id="edit_wed_1_open" data-day="wed" data-turn="1_open">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" id="edit_wed_1_close" data-day="wed" data-turn="1_close">
-              </div>
-              <div class="turn-row">
-                <label style="display: flex; align-items: center; gap: 8px;">
-                  <input type="checkbox" class="has-turn2" id="editWeekdaysTurn2">
-                  Intervalo das:
-                </label>
-                <input type="time" class="time-input" id="edit_wed_2_open" data-day="wed" data-turn="2_open">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" id="edit_wed_2_close" data-day="wed" data-turn="2_close">
-              </div>
-              <small style="color: #A0AEC0; font-size: 11px;">Aplica Seg, Ter, Qua, Qui e Sex</small>
-            </div>
-          </div>
-
-          <!-- Sáb -->
-          <div class="business-day-card" style="margin-bottom: 12px;">
-            <div class="business-day-header">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" class="day-checkbox" id="editDaySat" data-day-single="sat">
-                <strong>Sábado</strong>
-              </label>
-            </div>
-            <div class="business-day-body hidden" id="editSatBody">
-              <div class="turn-row">
-                <label>Das:</label>
-                <input type="time" class="time-input" id="edit_sat_1_open" data-day="sat" data-turn="1_open">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" id="edit_sat_1_close" data-day="sat" data-turn="1_close">
-              </div>
-            </div>
-          </div>
-
-          <!-- Dom -->
-          <div class="business-day-card" style="margin-bottom: 12px;">
-            <div class="business-day-header">
-              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" class="day-checkbox" id="editDaySun" data-day-single="sun">
-                <strong>Domingo</strong>
-              </label>
-            </div>
-            <div class="business-day-body hidden" id="editSunBody">
-              <div class="turn-row">
-                <label>Das:</label>
-                <input type="time" class="time-input" id="edit_sun_1_open" data-day="sun" data-turn="1_open">
-                <span style="margin: 0 4px;">às</span>
-                <input type="time" class="time-input" id="edit_sun_1_close" data-day="sun" data-turn="1_close">
-              </div>
-            </div>
-          </div>
+          <div id="editBusinessHoursContainer"></div>
+          
+          <button type="button" id="btnEditAddHoursGroup" class="btn-add-hours-group">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Adicionar horários
+          </button>
         </div>
 
         <div class="modal-footer">
@@ -302,7 +184,6 @@
     </div>
   </div>
 
-  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/src/shared/config.js"></script>
   <script src="/src/shared/utils.js"></script>

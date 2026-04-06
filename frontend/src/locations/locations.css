@@ -478,14 +478,21 @@ tr:last-child td { border-bottom: none; }
   transition: transform 0.3s ease;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.modal-content form {
   overflow-y: auto;
+  flex: 1;
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--color-border);
-  background: var(--bg-secondary);
-  flex-shrink: 0;
+  margin-top: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
 }
 
 .modal-overlay.active .modal-content { transform: translateY(0); }
@@ -497,6 +504,7 @@ tr:last-child td { border-bottom: none; }
   align-items: center;
   justify-content: space-between;
   background: #F8FAFC;
+  flex-shrink: 0;
 }
 
 .modal-header h2 {
@@ -522,17 +530,6 @@ tr:last-child td { border-bottom: none; }
 }
 
 .btn-close-modal:hover { background: var(--bg-secondary); color: var(--color-text); }
-
-.modal-body  { padding: var(--spacing-lg); }
-
-.modal-footer {
-  margin-top: 32px;
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-}
-
-form { padding: 24px; }
 
 /* ==================== LOADING ====================*/
 
@@ -589,42 +586,105 @@ form { padding: 24px; }
 
 /* ==================== BUSINESS HOURS ==================== */
 
-.business-day-card {
+.btn-add-hours-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: #F7FAFC;
+  border: 2px dashed #CBD5E0;
+  border-radius: 8px;
+  color: #4A5568;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+
+.btn-add-hours-group:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #EBF8FF;
+}
+
+.hours-group {
   background: #F7FAFC;
   border: 1px solid #E2E8F0;
   border-radius: 10px;
-  overflow: hidden;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
 }
 
-.business-day-header {
-  padding: 12px 16px;
-  background: #EDF2F7;
-  border-bottom: 1px solid #E2E8F0;
+.hours-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 12px;
 }
 
-.business-day-body {
-  padding: 12px 16px;
+.btn-remove-group {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #FED7D7;
+  border: none;
+  color: #E53E3E;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.business-day-body.hidden {
-  display: none;
+.btn-remove-group:hover {
+  background: #FC8181;
+  color: white;
 }
 
-.turn-row {
+.day-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.day-btn {
+  padding: 6px 12px;
+  border: 1px solid #CBD5E0;
+  border-radius: 6px;
+  background: white;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.day-btn:hover {
+  border-color: var(--color-primary);
+}
+
+.day-btn.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.hours-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
-  flex-wrap: wrap;
 }
 
-.turn-row label {
+.hours-row label {
   font-size: 13px;
   color: #4A5568;
-  min-width: 80px;
+  min-width: 40px;
 }
 
 .time-input {
@@ -632,7 +692,7 @@ form { padding: 24px; }
   border: 1px solid #CBD5E0;
   border-radius: 6px;
   font-size: 13px;
-  width: 90px;
+  width: 85px;
 }
 
 .time-input:focus {
@@ -640,10 +700,33 @@ form { padding: 24px; }
   outline: none;
 }
 
-.turn2-row {
+.btn-add-turn {
   margin-top: 8px;
+  padding: 6px 12px;
+  background: #EDF2F7;
+  border: 1px solid #CBD5E0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #4A5568;
+  cursor: pointer;
 }
 
-.turn2-row.hidden {
-  display: none;
+.btn-add-turn:hover {
+  background: #E2E8F0;
+}
+
+.turn-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.turn-item label {
+  font-size: 12px;
+  color: #718096;
+}
+
+.turn-item .time-input {
+  width: 80px;
 }

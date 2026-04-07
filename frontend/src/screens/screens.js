@@ -350,7 +350,79 @@ async function togglePauseResume() {
   }
 }
 
+async function takeScreenshot() {
+  const btn = document.getElementById('btnScreenshot')
+  btn.disabled = true
+  btn.innerHTML = '⏳ Enviando...'
+  
+  const previewDiv = document.getElementById('screenshotPreview')
+  const screenshotImg = document.getElementById('screenshotImage')
+  const statusText = document.getElementById('screenshotStatus')
+  
+  previewDiv.style.display = 'none'
+  
+  await sendCommand('screenshot')
+  
+  showNotification('Screenshot enviado! Aguarde até 30s para a imagem aparecer.', 'success')
+  
+  btn.disabled = false
+  btn.innerHTML = '📸 Tirar Screenshot'
+  
+  statusText.textContent = '⏳ Processando screenshot na TV...'
+  statusText.style.color = '#ECC94B'
+  previewDiv.style.display = 'block'
+  screenshotImg.src = ''
+  
+  setTimeout(() => checkForScreenshot(), 5000)
+}
+
+let screenshotCheckInterval = null
+
+async function checkForScreenshot() {
+  if (!currentScreenIdForCommand) return
+  
+  try {
+    const { data: logs, error } = await supabaseClient
+      .from('player_logs')
+      .select('*')
+      .eq('screen_id', currentScreenIdForCommand)
+      .eq('event_type', 'screenshot_taken')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    
+    if (error) throw error
+    
+    if (logs && logs.length > 0) {
+      const latestLog = logs[0]
+      const message = latestLog.message || ''
+      
+      if (message.includes('screenshot_')) {
+        const screenshotImg = document.getElementById('screenshotImage')
+        const statusText = document.getElementById('screenshotStatus')
+        
+        const urlMatch = message.match(/https?:\/\/[^\s]+\.png/)
+        if (urlMatch) {
+          screenshotImg.src = urlMatch[0] + '?t=' + new Date().getTime()
+          statusText.textContent = '📸 Screenshot capturado!'
+          statusText.style.color = '#48BB78'
+        }
+        
+        if (screenshotCheckInterval) {
+          clearInterval(screenshotCheckInterval)
+          screenshotCheckInterval = null
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao verificar screenshot:', error)
+  }
+}
+
 function closeDiagnosticsModal() {
+  if (screenshotCheckInterval) {
+    clearInterval(screenshotCheckInterval)
+    screenshotCheckInterval = null
+  }
   document.getElementById('modalDiagnostics').classList.remove('active')
 }
 

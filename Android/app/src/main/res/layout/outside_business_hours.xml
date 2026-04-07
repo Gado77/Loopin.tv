@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1A202C"
+    android:gravity="center">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="48dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🕐"
+            android:textSize="72sp"
+            android:layout_marginBottom="24dp"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fora do Horário de Funcionamento"
+            android:textColor="#FFFFFF"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/outsideHoursText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Este estabelecimento está fechado no momento.\nO conteúdo será exibido quando abrir."
+            android:textColor="#A0AEC0"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"/>
+
+    </LinearLayout>
+
+</FrameLayout>

@@ -655,6 +655,10 @@ async function handleEditCampaign(e) {
 async function deleteCampaign(id) {
   if (!confirm('Excluir esta campanha?')) return
   try {
+    const { data: campaign } = await apiSelect('campaigns', { eq: { id } })
+    if (campaign && campaign[0]?.media_url) {
+      await apiDeleteFile('medias', campaign[0].media_url)
+    }
     await apiDelete('campaigns', id)
     loadCampaigns()
     showNotification('Excluído!', 'success')

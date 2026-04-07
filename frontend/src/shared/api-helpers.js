@@ -171,6 +171,59 @@ async function apiUploadFile(bucket, filePath, file) {
   }
 }
 
+// ==================== 6B. DELETE DE ARQUIVO ====================
+
+async function apiDeleteFile(bucket, fileUrl) {
+  if (!fileUrl) return { error: null }
+  
+  try {
+    const urlParts = fileUrl.split('/')
+    const fileName = urlParts[urlParts.length - 1].split('?')[0]
+    
+    const { error } = await supabaseClient.storage
+      .from(bucket)
+      .remove([fileName])
+    
+    if (error) {
+      console.warn(`⚠️ Erro ao deletar arquivo ${fileName}:`, error)
+    }
+    return { error }
+    
+  } catch (error) {
+    console.warn(`⚠️ Erro ao deletar arquivo:`, error)
+    return { error }
+  }
+}
+
+// ==================== 6C. DELETE DE MÚLTIPLOS ARQUIVOS ====================
+
+async function apiDeleteFiles(bucket, fileUrls) {
+  if (!fileUrls || fileUrls.length === 0) return { error: null }
+  
+  const fileNames = fileUrls.map(url => {
+    if (!url) return null
+    const urlParts = url.split('/')
+    return urlParts[urlParts.length - 1].split('?')[0]
+  }).filter(Boolean)
+  
+  if (fileNames.length === 0) return { error: null }
+  
+  try {
+    const { error } = await supabaseClient.storage
+      .from(bucket)
+      .remove(fileNames)
+    
+    if (error) {
+      console.warn(`⚠️ Erro ao deletar arquivos:`, error)
+    }
+    return { error }
+    
+  } catch (error) {
+    console.warn(`⚠️ Erro ao deletar arquivos:`, error)
+    return { error }
+  }
+}
+
 // ==================== 7. HELPERS DE RENDERIZAÇÃO ====================
 
 function renderTable(tbody, data, columns, actions = []) {

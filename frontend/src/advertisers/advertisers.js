@@ -175,15 +175,26 @@ async function handleEditAdvertiser(e) {
 }
 
 async function deleteAdvertiser(id) {
-  if (!confirm('Tem certeza que deseja excluir este anunciante?')) return
+  if (!confirm('Tem certeza que deseja excluir este anunciante?\n\nIsso também excluirá todas as campanhas vinculadas!')) return
 
   try {
+    const { data: campaigns } = await apiSelect('campaigns', { eq: { advertiser_id: id } })
+    
+    if (campaigns && campaigns.length > 0) {
+      for (const campaign of campaigns) {
+        if (campaign.media_url) {
+          await apiDeleteFile('medias', campaign.media_url)
+        }
+        await apiDelete('campaigns', campaign.id)
+      }
+    }
+
     const { error } = await apiDelete('advertisers', id)
 
     if (error) throw error
 
     loadAdvertisers()
-    showNotification('Anunciante excluído com sucesso!', 'success')
+    showNotification('Anunciante e campanhas excluídos!', 'success')
 
   } catch (error) {
     console.error('❌ Erro:', error)

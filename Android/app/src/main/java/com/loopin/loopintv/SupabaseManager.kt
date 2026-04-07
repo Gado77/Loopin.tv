@@ -32,7 +32,14 @@ data class ScreenSettings(
     val orientation: String = "landscape",
     val orgLogoUrl: String? = null,
     val weatherApiKey: String? = null,
-    val isMuted: Boolean = false
+    val isMuted: Boolean = false,
+    val businessHours: Map<String, BusinessHour> = emptyMap()
+)
+
+data class BusinessHour(
+    val open: String = "",
+    val close: String = "",
+    val turn2: BusinessHour? = null
 )
 
 data class ScreenCommand(
@@ -75,7 +82,7 @@ class SupabaseManager(private val context: Context) {
 
     fun loadSettings(deviceId: String): ScreenSettings {
         try {
-            val screens = get("/screens?device_id=eq.${deviceId}&select=id,user_id,orientation,is_muted") ?: return ScreenSettings()
+            val screens = get("/screens?device_id=eq.${deviceId}&select=id,user_id,orientation,is_muted,locations(business_hours)") ?: return ScreenSettings()
             if (screens.length() == 0) return ScreenSettings()
 
             val screen = screens.getJSONObject(0)
@@ -84,7 +91,28 @@ class SupabaseManager(private val context: Context) {
             val orientation = screen.optString("orientation", "landscape")
             val isMuted = screen.optBoolean("is_muted", false)
 
-            if (userId.isEmpty()) return ScreenSettings(orientation = orientation, isMuted = isMuted)
+            val businessHours = mutableMapOf<String, BusinessHour>()
+            val locationObj = screen.optJSONObject("locations")
+            if (locationObj != null) {
+                val bhJson = locationObj.optJSONObject("business_hours")
+                if (bhJson != null) {
+                    bhJson.keys().forEach { day ->
+                        val dayObj = bhJson.getJSONObject(day)
+                        val open = dayObj.optString("open", "")
+                        val close = dayObj.optString("close", "")
+                        val turn2Obj = dayObj.optJSONObject("turn2")
+                        val turn2 = if (turn2Obj != null) {
+                            BusinessHour(
+                                open = turn2Obj.optString("open", ""),
+                                close = turn2Obj.optString("close", "")
+                            )
+                        } else null
+                        businessHours[day] = BusinessHour(open = open, close = close, turn2 = turn2)
+                    }
+                }
+            }
+
+            if (userId.isEmpty()) return ScreenSettings(orientation = orientation, isMuted = isMuted, businessHours = businessHours)
 
             val settings = get("/settings?user_id=eq.${userId}&select=organization_logo_url,api_weather_key")
             val settingsObj = settings?.optJSONObject(0)
@@ -95,7 +123,8 @@ class SupabaseManager(private val context: Context) {
                 orientation = orientation,
                 orgLogoUrl = settingsObj?.optString("organization_logo_url"),
                 weatherApiKey = settingsObj?.optString("api_weather_key"),
-                isMuted = isMuted
+                isMuted = isMuted,
+                businessHours = businessHours
             )
         } catch (e: Exception) {
             android.util.Log.e("SupabaseManager", "loadSettings error: ${e.message}")
@@ -441,11 +470,44 @@ class SupabaseManager(private val context: Context) {
             }
 
             if (deletedCount > 0) {
-                android.util.Log.d("SupabaseManager",
+            android.util.Log.d("SupabaseManager",
                     "Limpeza: ${deletedCount} arquivos removidos, ${freedBytes / 1024 / 1024}MB liberados")
             }
         } catch (e: Exception) {
             android.util.Log.w("SupabaseManager", "Erro na limpeza: ${e.message}")
+        }
+    }
+
+    fun uploadScreenshot(screenUuid: String, file: java.io.File): String? {
+        return try {
+            val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
+            val fileName = "screenshots/${screenUuid}_$timestamp.png"
+
+            val requestBody = okhttp3.RequestBody.create("image/png".toMediaType(), file)
+            val multipartBody = okhttp3.MultipartBody.Part.createFormData("file", fileName, requestBody)
+
+            val request = okhttp3.Request.Builder()
+                .url("${SupabaseConfig.URL}/storage/v1/object/screenshots/$fileName")
+                .post(multipartBody)
+                .addHeader("apikey", SupabaseConfig.API_KEY)
+                .addHeader("Authorization", "Bearer ${SupabaseConfig.API_KEY}")
+                .addHeader("Content-Type", "image/png")
+                .build()
+
+            val response = client.newCall(request).execute()
+            val responseBody = response.body?.string()
+
+            if (response.isSuccessful) {
+                val publicUrl = "${SupabaseConfig.URL}/storage/v1/object/public/screenshots/$fileName"
+                android.util.Log.d("SupabaseManager", "Screenshot uploaded: $publicUrl")
+                publicUrl
+            } else {
+                android.util.Log.e("SupabaseManager", "Upload failed: $responseBody")
+                null
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SupabaseManager", "Upload error: ${e.message}")
+            null
         }
     }
 }

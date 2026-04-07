@@ -283,7 +283,13 @@
         <div style="margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
           <button class="btn btn-secondary btn-small" id="btnRestartApp" onclick="sendCommand('restart')">🚀 Reiniciar App</button>
           <button class="btn btn-secondary btn-small" id="btnPauseResume" onclick="togglePauseResume()">⏸️ Pausar</button>
-          <button class="btn btn-secondary btn-small" id="btnLogViewer" onclick="openLogViewer()" style="grid-column: span 2; justify-content: center; background: #F7FAFC;">📋 Ver Logs do Player</button>
+          <button class="btn btn-secondary btn-small" id="btnScreenshot" onclick="takeScreenshot()" style="background: #FAF5FF; border-color: #B794F4;">📸 Tirar Screenshot</button>
+          <button class="btn btn-secondary btn-small" id="btnLogViewer" onclick="openLogViewer()" style="justify-content: center; background: #F7FAFC;">📋 Ver Logs</button>
+        </div>
+        
+        <div id="screenshotPreview" style="display: none; margin-top: 16px; text-align: center;">
+          <img id="screenshotImage" src="" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid #E2E8F0;">
+          <p id="screenshotStatus" style="margin: 8px 0 0 0; font-size: 12px; color: #48BB78;">📸 Screenshot capturado!</p>
         </div>
         
         <div style="margin-top: 20px; padding: 16px; background: #FFF7ED; border-radius: 8px; border: 1px solid #FED7AA;">

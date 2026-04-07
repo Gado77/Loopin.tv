@@ -239,6 +239,24 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        val withinBusinessHours = isWithinBusinessHours(settings.businessHours)
+        if (!withinBusinessHours && settings.businessHours.isNotEmpty()) {
+            mainHandler.post { showOutsideBusinessHours() }
+            mainHandler.postDelayed({
+                val newWithinHours = isWithinBusinessHours(settings.businessHours)
+                if (newWithinHours) {
+                    mainHandler.post {
+                        hideOutsideBusinessHours()
+                        if (!isPlaying && playlist.isNotEmpty()) {
+                            isPlaying = true
+                            playNext()
+                        }
+                    }
+                }
+            }, 60_000)
+            return
+        }
+
         items.filter { it.renderType == "media" && it.url != null }
             .forEach { supabase.downloadMedia(it.url!!) }
 
@@ -278,6 +296,26 @@ class MainActivity : AppCompatActivity() {
                 mainHandler.postDelayed(this, 30_000)
             }
         }, 15_000)
+
+        mainHandler.postDelayed(object : Runnable {
+            override fun run() {
+                if (outsideHoursView != null) {
+                    val newSettings = supabase.loadSettings(deviceId)
+                    settings = newSettings
+                    val withinHours = isWithinBusinessHours(settings.businessHours)
+                    if (withinHours) {
+                        mainHandler.post {
+                            hideOutsideBusinessHours()
+                            if (!isPlaying && playlist.isNotEmpty()) {
+                                isPlaying = true
+                                playNext()
+                            }
+                        }
+                    }
+                }
+                mainHandler.postDelayed(this, 60_000)
+            }
+        }, 60_000)
 
         mainHandler.postDelayed(object : Runnable {
             override fun run() {
@@ -337,9 +375,42 @@ class MainActivity : AppCompatActivity() {
                             supabase.sendLog(settings.screenUuid, "maintenance_mode", "Modo manutenção: $active")
                         }
                     }
+                    "screenshot" -> {
+                        bgExecutor.execute { takeRemoteScreenshot() }
+                    }
                 }
                 supabase.markCommandExecuted(command.id)
             }
+        }
+    }
+
+    private fun takeRemoteScreenshot() {
+        try {
+            val rootView = findViewById<View>(android.R.id.content).rootView
+            val bitmap = android.graphics.Bitmap.createBitmap(rootView.width, rootView.height, android.graphics.Bitmap.Config.ARGB_8888)
+            val canvas = android.graphics.Canvas(bitmap)
+            rootView.draw(canvas)
+
+            val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(java.util.Date())
+            val fileName = "screenshot_${deviceId}_$timestamp.png"
+
+            val tempFile = java.io.File(cacheDir, fileName)
+            val fos = java.io.FileOutputStream(tempFile)
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, fos)
+            fos.close()
+
+            val uploadedUrl = supabase.uploadScreenshot(settings.screenUuid, tempFile)
+            if (uploadedUrl != null) {
+                supabase.sendLog(settings.screenUuid, "screenshot_taken", "Screenshot uploaded: $uploadedUrl")
+                android.util.Log.d("Screenshot", "Upload OK: $uploadedUrl")
+            } else {
+                supabase.sendLog(settings.screenUuid, "screenshot_failed", "Falha ao fazer upload do screenshot")
+                android.util.Log.e("Screenshot", "Upload failed")
+            }
+            tempFile.delete()
+        } catch (e: Exception) {
+            android.util.Log.e("Screenshot", "Error: ${e.message}")
+            supabase.sendLog(settings.screenUuid, "screenshot_error", "Erro: ${e.message}")
         }
     }
 
@@ -996,6 +1067,71 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun hideSetupScreen() { findViewById<View>(R.id.setupScreen).visibility = View.GONE }
+
+    private fun isWithinBusinessHours(businessHours: Map<String, BusinessHour>): Boolean {
+        if (businessHours.isEmpty()) return true
+
+        val calendar = java.util.Calendar.getInstance()
+        val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK)
+        val currentDay = when (dayOfWeek) {
+            java.util.Calendar.MONDAY -> "mon"
+            java.util.Calendar.TUESDAY -> "tue"
+            java.util.Calendar.WEDNESDAY -> "wed"
+            java.util.Calendar.THURSDAY -> "thu"
+            java.util.Calendar.FRIDAY -> "fri"
+            java.util.Calendar.SATURDAY -> "sat"
+            java.util.Calendar.SUNDAY -> "sun"
+            else -> return true
+        }
+
+        val daySchedule = businessHours[currentDay] ?: return true
+        if (daySchedule.open.isEmpty() || daySchedule.close.isEmpty()) return true
+
+        val currentMinutes = calendar.get(java.util.Calendar.HOUR_OF_DAY) * 60 + calendar.get(java.util.Calendar.MINUTE)
+
+        fun parseTime(time: String): Int {
+            val parts = time.split(":")
+            if (parts.size != 2) return 0
+            return parts[0].toIntOrNull()?.times(60)?.plus(parts[1].toIntOrNull() ?: 0) ?: 0
+        }
+
+        val openMinutes = parseTime(daySchedule.open)
+        val closeMinutes = parseTime(daySchedule.close)
+
+        if (currentMinutes >= openMinutes && currentMinutes < closeMinutes) {
+            return true
+        }
+
+        val turn2 = daySchedule.turn2
+        if (turn2 != null && turn2.open.isNotEmpty() && turn2.close.isNotEmpty()) {
+            val open2Minutes = parseTime(turn2.open)
+            val close2Minutes = parseTime(turn2.close)
+            if (currentMinutes >= open2Minutes && currentMinutes < close2Minutes) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private var outsideHoursView: View? = null
+
+    private fun showOutsideBusinessHours() {
+        if (outsideHoursView != null) return
+
+        val rootView = findViewById<ViewGroup>(android.R.id.content)
+        outsideHoursView = layoutInflater.inflate(R.layout.outside_business_hours, rootView, false)
+        rootView.addView(outsideHoursView)
+        isPlaying = false
+    }
+
+    private fun hideOutsideBusinessHours() {
+        outsideHoursView?.let {
+            val rootView = findViewById<ViewGroup>(android.R.id.content)
+            rootView.removeView(it)
+        }
+        outsideHoursView = null
+    }
 
     // ==================== KIOSK E FULLSCREEN ====================
 

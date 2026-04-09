@@ -148,22 +148,31 @@ async function apiSearch(table, searchTerm, searchFields, userId = null) {
   }
 }
 
-// ==================== 6. UPLOAD DE ARQUIVO ====================
+// ==================== 6. UPLOAD DE ARQUIVO (Cloudflare R2) ====================
 
 async function apiUploadFile(bucket, filePath, file) {
   try {
-    const { data, error } = await supabaseClient.storage
-      .from(bucket)
-      .upload(filePath, file, { upsert: true })
+    // Pega o token JWT da sessão atual
+    const { data: { session } } = await supabaseClient.auth.getSession()
+    if (!session) throw new Error("Não autenticado")
 
-    if (error) throw error
+    // Chama a Edge Function do Supabase que faz upload no R2
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/upload-to-r2`, {
+      method: "POST",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: file,
+    })
 
-    // Retorna URL pública
-    const { data: { publicUrl } } = supabaseClient.storage
-      .from(bucket)
-      .getPublicUrl(filePath)
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || "Upload falhou")
+    }
 
-    return { url: publicUrl, error: null }
+    const result = await response.json()
+    return { url: result.url, error: null }
 
   } catch (error) {
     console.error(`❌ Erro ao fazer upload:`, error)

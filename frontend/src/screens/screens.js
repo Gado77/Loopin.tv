@@ -379,7 +379,11 @@ async function takeScreenshot() {
 let screenshotCheckInterval = null
 
 async function checkForScreenshot() {
-  if (!currentScreenIdForCommand) return
+  console.log('DEBUG screenshot: currentScreenIdForCommand =', currentScreenIdForCommand)
+  if (!currentScreenIdForCommand) {
+    console.log('DEBUG screenshot: screenId vazio!')
+    return
+  }
   
   try {
     const { data: logs, error } = await supabaseClient
@@ -390,17 +394,18 @@ async function checkForScreenshot() {
       .order('created_at', { ascending: false })
       .limit(1)
     
+    console.log('DEBUG screenshot: logs =', logs, 'error =', error)
     if (error) throw error
     
     if (logs && logs.length > 0) {
       const latestLog = logs[0]
       const message = latestLog.message || ''
       
-      if (message.includes('screenshot_')) {
+      if (message.includes('r2.dev') || message.includes('Screenshot uploaded')) {
         const screenshotImg = document.getElementById('screenshotImage')
         const statusText = document.getElementById('screenshotStatus')
         
-        const urlMatch = message.match(/https?:\/\/[^\s]+\.png/)
+        const urlMatch = message.match(/https?:\/\/[^\s]+\.(png|jpg|jpeg)/)
         if (urlMatch) {
           screenshotImg.src = urlMatch[0] + '?t=' + new Date().getTime()
           statusText.textContent = '📸 Screenshot capturado!'

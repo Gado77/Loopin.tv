@@ -22,30 +22,19 @@ export default {
       );
     }
 
-    // Support both city name and lat/lon coordinates
-    const lat = url.searchParams.get("lat");
-    const lon = url.searchParams.get("lon");
-    
-    let weatherUrl;
-    if (lat && lon) {
-      weatherUrl = new URL(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${apiKey}`
-      );
-    } else {
-      weatherUrl = new URL(
+    try {
+      const weatherUrl = new URL(
         `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(
           city
-        )}&units=metric&lang=pt_br&appid=${apiKey}`
+        )}&units=metric&lang=pt_br&app_id=${apiKey}`
       );
-    }
 
-    try {
       const response = await fetch(weatherUrl.toString());
       const data = await response.json();
 
       if (data.cod !== 200) {
         return new Response(
-          JSON.stringify({ error: data.message || "Erro ao buscar clima", city }),
+          JSON.stringify({ error: data.message || "Erro ao buscar clima" }),
           { status: 400, headers: { "Content-Type": "application/json" } }
         );
       }
@@ -57,7 +46,6 @@ export default {
         description: data.weather[0].description,
         icon: data.weather[0].icon,
         city: data.name,
-        country: data.sys.country,
         updated: new Date().toISOString(),
       };
 

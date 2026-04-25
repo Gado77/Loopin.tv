@@ -7,7 +7,6 @@
     "dev": "vite dev",
     "build": "vite build",
     "postbuild": "node -e \"const fs=require('fs');const f=fs.readdirSync('dist/client/assets').find(x=>x.match(/^index-.*\\.js$/));fs.writeFileSync('dist/client/index.html',`<!DOCTYPE html><html lang=pt-BR><head><meta charset=UTF-8/><link rel=icon href=/favicon.ico/><meta name=viewport content=width=device-width,initial-scale=1/><title>Loopin TV</title></head><body><div id=root></div><script type=module src=/assets/${f}></script></body></html>`);\"",
-    "build:vercel": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."

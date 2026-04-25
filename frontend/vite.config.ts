@@ -1,15 +1,7 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      "@": "/src",
-    },
-  },
-  base: "./",
-  build: {
-    assetsDir: "assets",
+  vite: {
+    base: "./",
   },
 });

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cp -r frontend output",
-  "outputDirectory": "output",
+  "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/dist",
   "framework": null
 }
